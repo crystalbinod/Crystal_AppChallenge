@@ -2,7 +2,8 @@ import * as React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DrawerNavigator from './drawer/DrawerNavigator';
 import DetailsScreen from '../screens/DetailsScreen';
-
+import LoginScreen from '../screens/LoginScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 // Define the types for the stack routes and their parameters
 // 'Main' holds your drawer navigation
@@ -11,6 +12,9 @@ import DetailsScreen from '../screens/DetailsScreen';
 export type RootStackParamList = {
   Main: undefined;         // the drawer lives here
   Details: { id?: string } | undefined; // example stack-only screen
+  Login: undefined;
+  Profile: undefined;
+  
 };
 
 // Create a Stack Navigator instance using the defined type
@@ -22,7 +26,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function RootNavigator() {
   return (
     // Stack.Navigator wraps all your stack screens
-    <Stack.Navigator>
+    <Stack.Navigator initialRouteName="Login">
       {/* 
         The 'Main' screen contains your Drawer Navigator.
         headerShown: false hides the top bar because the Drawer/Tabs already have their own headers.
@@ -38,6 +42,8 @@ export default function RootNavigator() {
         Useful for showing extra details (e.g., user info, post details, etc.)
       */}
       <Stack.Screen name="Details" component={DetailsScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
     </Stack.Navigator>
   );
 
