@@ -2,6 +2,23 @@
   "expo": {
     "name": "Crystal_AppChallenge",
     "slug": "Crystal_AppChallenge",
+    "scheme":"Crystal-AppChallenge-CB",
+    "extra": {
+      "googleAuth":{
+        "expoClientId":"492242577167-rtkbv32uoe0bin6bobmpilorj8a4p1bs.apps.googleusercontent.com"
+      }
+    },
+    "firebase":{
+      "apiKey":"AIzaSyCdr1TdSUUcwHc8cSuTAqoi7J_5TbZRhgA",
+      "authDomain":"crystal-appchallenge-cb.firebaseapp.com",
+      "projectId":"crystal-appchallenge-cb",
+      "appId":"crystal-appchallenge-cb.firebasestorage.app",
+      "messagingSenderId":"492242577167",
+      "storageBucket":"1:492242577167:web:92164e18761530c6fec07a",
+      "measurementId": "G-S6W4D7NJ14",
+    },
+  
+
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -30,7 +47,8 @@
           "backgroundColor": "#ffffff",
           "image": "./assets/splash-icon.png"
         }
-      ]
+      ],
+      "expo-web-browser"
     ]
   }
 }

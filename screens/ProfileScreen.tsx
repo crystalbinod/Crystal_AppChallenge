@@ -1,56 +1,49 @@
 // screens/ProfileScreen.tsx
 import * as React from 'react';
 import { View, Text, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/RootNavigator';
-import { useFonts } from 'expo-font';
-
 
 export default function ProfileScreen() {
-  
-  // Return the UI for the screen
   return (
-    // A centered container
+    // Center the content in the screen
     <ScrollView style={{ 
+                flex: 1, 
+                backgroundColor: '#F2E5D7',
+                flexDirection: 'row',
+                
+              }}>
+                
+                {/* column 1 */}
+                <View style={{ 
             flex: 1, 
+            
             backgroundColor: '#F2E5D7',
-            flexDirection: 'row',
-            
+            marginBottom: 20,
+            justifyContent: 'center',
+            alignItems: 'center',
           }}>
-            
-            {/* column 1 */}
-            <View style={{ 
-        flex: 1, 
-        
-        backgroundColor: '#F2E5D7',
-        marginBottom: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}>
-              <View style={{
-               backgroundColor:'#63372C',
-               borderRadius:30,
-               padding:20,
-               paddingRight:400,
-               paddingBottom:150,
-               marginLeft:30,
-            }}>
-              <Text style={{
-              fontSize: 38,
-              color: '#C97D60',
-              fontFamily: 'Windows',
-              fontWeight:"bold",
-              
-            }}>
-              Login Info
-            </Text>
-            </View>
-            
-            </View>
-
-            {/* column 2 */}
-            
-    </ScrollView>
+                  <View style={{
+                   backgroundColor:'#63372C',
+                   borderRadius:30,
+                   padding:20,
+                   paddingRight:400,
+                   paddingBottom:150,
+                   marginLeft:30,
+                }}>
+                  <Text style={{
+                  fontSize: 38,
+                  color: '#C97D60',
+                  fontFamily: 'Windows',
+                  fontWeight:"bold",
+                  
+                }}>
+                  Investment Summary
+                </Text>
+                </View>
+                
+                </View>
+    
+                {/* column 2 */}
+                
+        </ScrollView>
   );
 }

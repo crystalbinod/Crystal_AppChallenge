@@ -1,6 +1,6 @@
 // screens/LoginScreen.tsx
 import * as React from 'react';
-import { View, Text, Button, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Button, Image, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
@@ -22,8 +22,17 @@ export default function LoginScreen() {
     'Pixel': require('../assets/pixel.ttf'),
   });
 
-  
-
+  const styles = StyleSheet.create({
+  input: {
+    height: 40,
+    margin: 12,
+    borderWidth: 1,
+    padding: 10,
+  },
+});
+  const TextInputExample = () => {
+  const [text, onChangeText] = React.useState('');
+  const [number, onChangeNumber] = React.useState('');
   const handlePress = () => {
     setShowGif(true);  // Show the GIF
     
@@ -98,8 +107,20 @@ export default function LoginScreen() {
           LOGIN
         </Text>
       </TouchableOpacity>
-      
+       <TextInput
+          style={styles.input}
+          placeholder="Password"
+          onChangeText={onChangeText}
+          value={text}
+        />
+        <TextInput
+          style={styles.input}
+          onChangeText={onChangeNumber}
+          value={number}
+          placeholder="Password"
+          keyboardType="numeric"
+        />
       
     </View>
   );
-}
+}}
