@@ -4,13 +4,22 @@ import * as React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 // Import the screens that will be shown in each tab
 import HomeScreen from '../../screens/HomeScreen';
-import ProfileScreen from '../../screens/ProfileScreen';
+import ShopScreen from '../../screens/ShopScreen';
+import FinicialSimScreen from '../../screens/FinancialSimScreen';
+import BankScreen from '../../screens/BankScreen';
+import LearnScreen from '../../screens/LearnScreen';
+import DrawerNavigator from '../drawer/DrawerNavigator';
+import { useFonts } from 'expo-font';
+
 
 // Define the types for your bottom tab routes and their parameters
 // 'undefined' means these routes don't expect any route params
 export type TabsParamList = {
   Home: undefined;
-  Profile: undefined;
+  Shop: undefined;
+  FinicialSim:undefined;
+  Bank:undefined;
+  Learn:undefined;
 };
 
 
@@ -20,14 +29,40 @@ const Tab = createBottomTabNavigator<TabsParamList>();
 
 //function to create the bottom tab navigator
 export default function TabsNavigator() {
+  const [fontsLoaded] = useFonts({
+      'LazyDaze': require('../../assets/ATP-Lazy Daze.ttf'),
+      'Windows': require('../../assets/windows-bold.ttf'),
+      'RetroBoulevard': require('../../assets/Retro Boulevard.ttf'),
+      'Pixel': require('../../assets/pixel.ttf'),
+    });
+  
   // The Tab.Navigator component wraps all your tab screens
   // initialRouteName specifies which tab appears first (Home)
   return (
-    <Tab.Navigator initialRouteName="Home">
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#63372C', // Color of active tab icon and label
+        tabBarInactiveTintColor: '#63372cb4', // Color of inactive tab icon and label'#7e4c40ff'
+        tabBarStyle: {
+          borderRadius:10, 
+          backgroundColor: '#c78e71ff', // Background color of the tab bar
+          height: 40, // Height of the tab bar
+           // Padding at the bottom
+        },
+        
+        tabBarLabelStyle: { 
+          fontSize: 12, // Font size of tab labels
+          fontFamily:'Pixel',
+        },
+      }}
+     initialRouteName="Home">
       {/* First tab — shows the Home screen */}
-      <Tab.Screen name="Home" component={HomeScreen} />
-      {/* Second tab — shows the Profile screen */}
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }}/>
+      {/* Second tab — shows the Shop screen */}
+      <Tab.Screen name="Shop" component={ShopScreen} options={{ headerShown: false}} />
+      <Tab.Screen name="FinicialSim" component={FinicialSimScreen} options={{ headerShown: false}}/>
+      <Tab.Screen name="Bank" component={DrawerNavigator} options={{ headerShown: false}}/>
+      <Tab.Screen name="Learn" component={LearnScreen} options={{ headerShown: false}}/>
     </Tab.Navigator>
   );
 }
