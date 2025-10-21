@@ -1,4 +1,5 @@
 // screens/LoginScreen.tsx
+// screens/LoginScreen.tsx
 import * as React from 'react';
 import { View, Text, Button, Image, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -7,14 +8,11 @@ import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useFonts } from 'expo-font';
 
 export default function LoginScreen() {
-   // Get the navigation object with proper typing for RootStackParamList
-  // This ensures TypeScript knows 'Details' exists and accepts 'id' as a param
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  
-  // State to control GIF visibility
   const [showGif, setShowGif] = React.useState(false);
-  
-  // Load the Retro Vintage font
+  const [username, setUsername] = React.useState('');
+  const [password, setPassword] = React.useState('');
+
   const [fontsLoaded] = useFonts({
     'LazyDaze': require('../assets/ATP-Lazy Daze.ttf'),
     'Windows': require('../assets/windows-bold.ttf'),
@@ -22,105 +20,112 @@ export default function LoginScreen() {
     'Pixel': require('../assets/pixel.ttf'),
   });
 
-  const styles = StyleSheet.create({
-  input: {
-    height: 40,
-    margin: 12,
-    borderWidth: 1,
-    padding: 10,
-  },
-});
-  const TextInputExample = () => {
-  const [text, onChangeText] = React.useState('');
-  const [number, onChangeNumber] = React.useState('');
   const handlePress = () => {
-    setShowGif(true);  // Show the GIF
-    
-    // Navigate after GIF plays (adjust time to match your GIF duration)
+    setShowGif(true);
     setTimeout(() => {
       navigation.navigate('Main');
-    }, 900);  // 2 seconds - adjust this to your GIF length
+    }, 900);
   };
 
-  // Center the content in the screen
+  const styles = StyleSheet.create({
+    input: {
+      height: 40,
+      width: 250,
+      marginTop: 15,
+      marginBottom:10,
+      borderWidth: 1.5,
+      borderColor: '#C97D60',
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      backgroundColor: '#fff8f3',
+      fontFamily: 'Pixel',
+      fontSize: 14,
+      color: '#63372C',
+      textAlign: 'center',
+    },
+  });
+
   return (
     <View style={{ 
-        flex: 1,
-        alignItems: 'center',
-        backgroundColor: '#F2E5D7' 
+      flex: 1,
+      alignItems: 'center',
+      backgroundColor: '#F2E5D7',
     }}>
       <Text style={{
         fontSize: 80,
         color: '#C97D60',
-        fontFamily: 'Windows', // or custom font name
+        fontFamily: 'Windows',
         marginBottom: 0,
         marginTop: 10,
-     }}>title.</Text>
-     
-     {/* Show GIF when button is pressed, otherwise show pig */}
-     {showGif ? (
-       <Image 
-         source={require('../assets/pig_icon(gif).gif')}  // Replace with your GIF filename
-         style={{
-           width: 200,
-           height: 220,
-           marginBottom: 50,
-           marginTop: 80,
-         }}
-       />
-     ) : (
-       <Image 
-         source={require('../assets/pig_icon.png')}
-         style={{
-           width: 200,
-           height: 220,
-           marginBottom: 50,
-           marginTop: 80,
-         }}
-       />
-     )}
-      
-      
-      <TouchableOpacity //create a button that is an image and puts font over the button
-        onPress={handlePress}  // Changed to handlePress
-        activeOpacity={0.7}  // Opacity when pressed (0.7 = 70%)
-      >
+      }}>
+        title.
+      </Text>
+
+      {showGif ? (
+        <Image 
+          source={require('../assets/pig_icon(gif).gif')}
+          style={{
+            width: 200,
+            height: 220,
+            marginBottom: 0,
+            marginTop: 10,
+          }}
+        />
+      ) : (
+        <Image 
+          source={require('../assets/pig_icon.png')}
+          style={{
+            width: 200,
+            height: 220,
+            marginBottom: 0,
+            marginTop: 10,
+          }}
+        />
+      )}
+
+      {/* New Input Fields Below the Login Button */}
+      <TextInput
+        style={styles.input}
+        placeholder="Username"
+        placeholderTextColor="#C97D60"
+        value={username}
+        onChangeText={setUsername}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        placeholderTextColor="#C97D60"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
+
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
         <Image 
           source={require('../assets/button.png')}
           style={{
             width: 200,
             height: 100,
             position: 'absolute',
-            alignSelf: 'center', 
+            alignSelf: 'center',
           }}
         />
         <Text style={{
           paddingTop: 30,
-          marginBottom: 10,               // Position at top
-          alignItems: 'center',   // Center horizontally
-          justifyContent: 'center', //Center vertically #C97D60
+          marginBottom: 10,
+          alignItems: 'center',
+          justifyContent: 'center',
           color: '#63372C',
           fontSize: 20,
-          fontWeight:"bold",
-          fontFamily:"Pixel",
+          fontWeight: 'bold',
+          fontFamily: 'Pixel',
+          textAlign: 'center',
         }}>
           LOGIN
         </Text>
       </TouchableOpacity>
-       <TextInput
-          style={styles.input}
-          placeholder="Password"
-          onChangeText={onChangeText}
-          value={text}
-        />
-        <TextInput
-          style={styles.input}
-          onChangeText={onChangeNumber}
-          value={number}
-          placeholder="Password"
-          keyboardType="numeric"
-        />
+
       
     </View>
   );
-}}
+}

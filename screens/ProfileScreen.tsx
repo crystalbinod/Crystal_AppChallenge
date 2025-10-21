@@ -36,7 +36,7 @@ export default function ProfileScreen() {
                   fontWeight:"bold",
                   
                 }}>
-                  Investment Summary
+                  Profile Summary
                 </Text>
                 </View>
                 
