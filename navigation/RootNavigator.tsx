@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DrawerNavigator from './drawer/DrawerNavigator';
 import LoginScreen from '../screens/LoginScreen';
@@ -10,7 +11,12 @@ import BankScreen from '../screens/BankScreen';
 import LearnScreen from '../screens/LearnScreen';
 import snakegame from '../screens/snakegame';
 import Job1Screen from '../screens/Job1Screen';
+import twentyScreen from '../screens/twentyScreen';
+import SignupScreen from '../screens/SignupScreen';
+import MemoryScreen from '../screens/MemoryScreen';
+import PongScreen from '../screens/PongScreen';
 import TabsNavigator from './tabs/TabsNavigator';
+
 
 
 // Define the types for the stack routes and their parameters
@@ -28,18 +34,34 @@ export type RootStackParamList = {
   Learn: undefined;
   Job1:  undefined;
   snakegame:undefined;
+  Signup:undefined;
+  2048:undefined;
+  Memory:undefined;
+  Pong:undefined;
 };
 
 // Create a Stack Navigator instance using the defined type
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
 
 // Define and export the RootNavigator component
 // This is your top-level navigation container
 export default function RootNavigator() {
   return (
     // Stack.Navigator wraps all your stack screens
-    <Stack.Navigator initialRouteName="Login">
+    <Stack.Navigator initialRouteName="Login" screenOptions={{
+      headerStyle: {
+          height: 40,
+          backgroundColor: '#c78e71ff',
+          borderBottomRightRadius:10,
+          borderBottomLeftRadius:10,
+            
+          },
+      headerTitleStyle: {
+          fontFamily: 'Windows', // must match the key you used in useFonts
+          fontSize: 20,
+          color: "#63372C"
+         },
+    }}>
       {/* 
         The 'Main' screen contains your tabs Navigator.
         headerShown: false hides the top bar because the Drawer/Tabs already have their own headers.
@@ -63,10 +85,15 @@ export default function RootNavigator() {
       <Stack.Screen name="Learn" component={LearnScreen} />
       <Stack.Screen name="Job1" component={Job1Screen} />
       <Stack.Screen name="snakegame" component={snakegame} />
+      <Stack.Screen name="Signup" component={SignupScreen} />
+      <Stack.Screen name="2048" component={twentyScreen} />
+      <Stack.Screen name="Memory" component={MemoryScreen} />
+      <Stack.Screen name="Pong" component={PongScreen} />
     </Stack.Navigator>
   );
 
 }
+
 
 /*RootNavigator
  └── TabsNavigator (Main)

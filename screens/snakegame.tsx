@@ -1,34 +1,57 @@
 // screens/games/SnakeGame.tsx
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Button, StyleSheet, Platform, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  Platform,
+  useWindowDimensions,
+  TouchableOpacity,
+} from 'react-native';
 import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 
-const BOARD_SIZE = 20;
-const CELL_SIZE = 15;
-const GAME_SPEED = 150;
+// Game layout constants (rectangular board: fewer rows, more columns)
+const DEFAULT_ROWS = 12;
+const DEFAULT_COLS = 28;
+const GAME_SPEED = 120;
+const CONTROL_PANEL_WIDTH = 120;
 
 type Direction = [number, number];
 
 export default function SnakeGame() {
-  const [snake, setSnake] = useState<[number, number][]>([[10, 10]]);
-  const [food, setFood] = useState<[number, number]>([15, 15]);
+  const { width, height } = useWindowDimensions();
+
+  const ROWS = DEFAULT_ROWS;
+  const COLS = DEFAULT_COLS;
+
+  const [snake, setSnake] = useState<[number, number][]>([[Math.floor(COLS / 2), Math.floor(ROWS / 2)]]);
+  const [food, setFood] = useState<[number, number]>(() => [Math.floor(COLS * 0.75), Math.floor(ROWS * 0.75)]);
   const [direction, setDirection] = useState<Direction>([1, 0]);
   const [nextDirection, setNextDirection] = useState<Direction>([1, 0]);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const gameLoopRef = useRef<NodeJS.Timeout>();
+  const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
+
+  // Responsive cell size calculation (keeps board fitting horizontally with control panel on right)
+  const padding = 16;
+  const maxBoardWidth = Math.max(80, width - CONTROL_PANEL_WIDTH - padding * 3);
+  const maxBoardHeight = Math.max(80, height - padding * 4 - 80); // allow space for header/title
+  const cellSize = Math.max(6, Math.floor(Math.min(maxBoardWidth / COLS, maxBoardHeight / ROWS)));
+  const boardWidth = cellSize * COLS;
+  const boardHeight = cellSize * ROWS;
+
+  const isMobile = Platform.OS === 'ios' || Platform.OS === 'android';
 
   // Keyboard event listeners for web/desktop
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (gameOver || isPaused) return;
-
       const key = event.key.toLowerCase();
-      
       switch (key) {
         case 'arrowup':
         case 'w':
@@ -53,12 +76,14 @@ export default function SnakeGame() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', handleKeyPress);
+      return () => window.removeEventListener('keydown', handleKeyPress);
+    }
   }, [direction, gameOver, isPaused]);
 
   // Swipe gesture handler for mobile
-  const gesture = React.useMemo(
+  const gesture = useMemo(
     () =>
       Gesture.Pan()
         .onStart((e) => {
@@ -67,27 +92,18 @@ export default function SnakeGame() {
         })
         .onEnd((e) => {
           if (gameOver || isPaused) return;
-
           const deltaX = e.x - startX.value;
           const deltaY = e.y - startY.value;
-          const threshold = 30;
-
-          // Determine swipe direction
+          const threshold = 20;
           if (Math.abs(deltaX) > Math.abs(deltaY)) {
             if (Math.abs(deltaX) > threshold) {
-              if (deltaX > 0 && direction[0] === 0) {
-                setNextDirection([1, 0]); // Swipe right
-              } else if (deltaX < 0 && direction[0] === 0) {
-                setNextDirection([-1, 0]); // Swipe left
-              }
+              if (deltaX > 0 && direction[0] === 0) setNextDirection([1, 0]);
+              else if (deltaX < 0 && direction[0] === 0) setNextDirection([-1, 0]);
             }
           } else {
             if (Math.abs(deltaY) > threshold) {
-              if (deltaY > 0 && direction[1] === 0) {
-                setNextDirection([0, 1]); // Swipe down
-              } else if (deltaY < 0 && direction[1] === 0) {
-                setNextDirection([0, -1]); // Swipe up
-              }
+              if (deltaY > 0 && direction[1] === 0) setNextDirection([0, 1]);
+              else if (deltaY < 0 && direction[1] === 0) setNextDirection([0, -1]);
             }
           }
         }),
@@ -104,18 +120,10 @@ export default function SnakeGame() {
         setDirection(nextDirection);
 
         const head = prevSnake[0];
-        const newHead: [number, number] = [
-          head[0] + nextDirection[0],
-          head[1] + nextDirection[1],
-        ];
+        const newHead: [number, number] = [head[0] + nextDirection[0], head[1] + nextDirection[1]];
 
         // Check wall collision
-        if (
-          newHead[0] < 0 ||
-          newHead[0] >= BOARD_SIZE ||
-          newHead[1] < 0 ||
-          newHead[1] >= BOARD_SIZE
-        ) {
+        if (newHead[0] < 0 || newHead[0] >= COLS || newHead[1] < 0 || newHead[1] >= ROWS) {
           setGameOver(true);
           return prevSnake;
         }
@@ -134,10 +142,7 @@ export default function SnakeGame() {
           // Generate new food position (avoid snake)
           let newFood: [number, number];
           do {
-            newFood = [
-              Math.floor(Math.random() * BOARD_SIZE),
-              Math.floor(Math.random() * BOARD_SIZE),
-            ];
+            newFood = [Math.floor(Math.random() * COLS), Math.floor(Math.random() * ROWS)];
           } while (newSnake.some((seg) => seg[0] === newFood[0] && seg[1] === newFood[1]));
           setFood(newFood);
         } else {
@@ -148,18 +153,20 @@ export default function SnakeGame() {
       });
     }, GAME_SPEED);
 
-    return () => clearInterval(gameLoopRef.current);
+    return () => {
+      if (gameLoopRef.current) clearInterval(gameLoopRef.current);
+    };
   }, [nextDirection, gameOver, isPaused, food]);
 
   const handleDirectionChange = (newDir: Direction) => {
-    if (direction[0] !== -newDir[0] || direction[1] !== -newDir[1]) {
-      setNextDirection(newDir);
-    }
+    // ignore reverse
+    if (direction[0] === -newDir[0] && direction[1] === -newDir[1]) return;
+    setNextDirection(newDir);
   };
 
   const resetGame = () => {
-    setSnake([[10, 10]]);
-    setFood([15, 15]);
+    setSnake([[Math.floor(COLS / 2), Math.floor(ROWS / 2)]]);
+    setFood([Math.floor(COLS * 0.75), Math.floor(ROWS * 0.75)]);
     setDirection([1, 0]);
     setNextDirection([1, 0]);
     setGameOver(false);
@@ -167,90 +174,85 @@ export default function SnakeGame() {
     setIsPaused(false);
   };
 
-  const isMobile = Platform.OS === 'ios' || Platform.OS === 'android';
+  // Render board cells using absolute positions for consistent sizing
+  const cells = [] as React.ReactNode[];
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      const isSnake = snake.some((seg) => seg[0] === x && seg[1] === y);
+      const isFood = food[0] === x && food[1] === y;
+      cells.push(
+        <View
+          key={`cell-${x}-${y}`}
+          style={[
+            styles.cell,
+            {
+              width: cellSize,
+              height: cellSize,
+              left: x * cellSize,
+              top: y * cellSize,
+            },
+            isSnake && styles.snakeCell,
+            isFood && styles.foodCell,
+          ]}
+        />
+      );
+    }
+  }
 
   return (
     <GestureHandlerRootView style={styles.container}>
       <GestureDetector gesture={gesture}>
-        <View style={styles.content}>
-          <Text style={styles.title}>Snake Game</Text>
-          <View style={styles.statsContainer}>
-            <Text style={styles.score}>Score: {score}</Text>
-            <Text style={styles.hintText}>
-              {isMobile ? 'Swipe to move' : 'Use arrow keys or WASD'}
-            </Text>
+        <View style={styles.outer}>
+          <View style={[styles.boardContainer, { width: boardWidth + 4, height: boardHeight + 4 }]}>
+            
+            <View style={[styles.board, { width: boardWidth, height: boardHeight }]}>
+              {cells}
+              {gameOver && (
+                <View style={[styles.overlay, { width: boardWidth, height: boardHeight }]}>
+                  <Text style={styles.gameOver}>Game Over</Text>
+                  <Text style={styles.finalScore}>Score: {score}</Text>
+                </View>
+              )}
+              {isPaused && (
+                <View style={[styles.overlay, { width: boardWidth, height: boardHeight }]}>
+                  <Text style={styles.paused}>Paused</Text>
+                </View>
+              )}
+            </View>
           </View>
 
-          <View
-            style={[
-              styles.board,
-              {
-                width: BOARD_SIZE * CELL_SIZE,
-                height: BOARD_SIZE * CELL_SIZE,
-              },
-            ]}
-          >
-            {Array.from({ length: BOARD_SIZE }).map((_, y) =>
-              Array.from({ length: BOARD_SIZE }).map((_, x) => (
-                <View
-                  key={`${x}-${y}`}
-                  style={[
-                    styles.cell,
-                    snake.some((seg) => seg[0] === x && seg[1] === y) &&
-                      styles.snakeCell,
-                    food[0] === x && food[1] === y && styles.foodCell,
-                  ]}
-                />
-              ))
-            )}
-          </View>
+          <View style={styles.controlsPanel}>
+            <Text style={styles.score}>Score</Text>
+            <Text style={styles.bigScore}>{score}</Text>
 
-          {gameOver && (
-            <View style={styles.gameOverContainer}>
-              <Text style={styles.gameOver}>Game Over!</Text>
-              <Text style={styles.finalScore}>Final Score: {score}</Text>
+            <View style={styles.controlsRow}>
+              <Button title={isPaused ? 'Resume' : 'Pause'} onPress={() => setIsPaused(!isPaused)} />
             </View>
-          )}
 
-          {isPaused && (
-            <View style={styles.pausedContainer}>
-              <Text style={styles.paused}>Paused</Text>
+            <View style={styles.controlsRow}>
+              <Button title="New Game" onPress={resetGame} />
             </View>
-          )}
 
-          <View style={styles.controlsContainer}>
             {!isMobile && (
-              <>
-                <View style={styles.arrowContainer}>
-                  <Button
-                    title="↑"
-                    onPress={() => handleDirectionChange([0, -1])}
-                  />
+              <View style={styles.numpad}>
+                <View style={styles.numpadRow}>
+                  <TouchableOpacity style={styles.nKey} onPress={() => handleDirectionChange([0, -1])}>
+                    <Text style={styles.nKeyText}>↑</Text>
+                  </TouchableOpacity>
                 </View>
-                <View style={styles.arrowRow}>
-                  <Button
-                    title="←"
-                    onPress={() => handleDirectionChange([-1, 0])}
-                  />
-                  <Button
-                    title="↓"
-                    onPress={() => handleDirectionChange([0, 1])}
-                  />
-                  <Button
-                    title="→"
-                    onPress={() => handleDirectionChange([1, 0])}
-                  />
+                <View style={styles.numpadRow}>
+                  <TouchableOpacity style={styles.nKey} onPress={() => handleDirectionChange([-1, 0])}>
+                    <Text style={styles.nKeyText}>←</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.nKey} onPress={() => handleDirectionChange([0, 1])}>
+                    <Text style={styles.nKeyText}>↓</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.nKey} onPress={() => handleDirectionChange([1, 0])}>
+                    <Text style={styles.nKeyText}>→</Text>
+                  </TouchableOpacity>
                 </View>
-              </>
+              </View>
             )}
-
-            <View style={styles.actionButtons}>
-              <Button
-                title={isPaused ? 'Resume' : 'Pause'}
-                onPress={() => setIsPaused(!isPaused)}
-              />
-              <Button title="Reset" onPress={resetGame} />
-            </View>
           </View>
         </View>
       </GestureDetector>
@@ -261,104 +263,117 @@ export default function SnakeGame() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f7fafc',
   },
-  content: {
+  outer: {
     flex: 1,
+    flexDirection: 'row',
+    padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+  },
+  boardContainer: {
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#111827',
+    borderRadius: 8,
+    padding: 8,
+    marginRight: 16,
+    alignItems: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-  },
-  statsContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  score: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 5,
-  },
-  hintText: {
-    fontSize: 12,
-    color: '#999',
-    fontStyle: 'italic',
+    fontWeight: '700',
+    marginBottom: 8,
+    color: '#111827',
   },
   board: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    borderWidth: 3,
-    borderColor: '#333',
-    backgroundColor: '#fff',
-    marginBottom: 20,
+    position: 'relative',
+    backgroundColor: '#e6edf3',
+    overflow: 'hidden',
   },
   cell: {
+    position: 'absolute',
     borderWidth: 0.5,
-    borderColor: '#ddd',
-    backgroundColor: '#fff',
+    borderColor: 'rgba(0,0,0,0.06)',
+    backgroundColor: '#ffffff',
   },
   snakeCell: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#10b981',
   },
   foodCell: {
-    backgroundColor: '#FF5252',
+    backgroundColor: '#ef4444',
   },
-  gameOverContainer: {
+  overlay: {
     position: 'absolute',
+    left: 0,
+    top: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    paddingVertical: 20,
-    paddingHorizontal: 40,
-    borderRadius: 10,
-    zIndex: 100,
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   gameOver: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FF5252',
-    marginBottom: 10,
+    fontSize: 20,
+    color: '#fff',
+    fontWeight: '700',
+    marginBottom: 6,
   },
   finalScore: {
     fontSize: 16,
     color: '#fff',
   },
-  pausedContainer: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    paddingVertical: 20,
-    paddingHorizontal: 40,
-    borderRadius: 10,
-    zIndex: 100,
-  },
   paused: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFD700',
+    color: '#ffd166',
+    fontWeight: '700',
   },
-  controlsContainer: {
-    gap: 15,
+  controlsPanel: {
+    width: CONTROL_PANEL_WIDTH,
+    padding: 12,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e6edf3',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  score: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '600',
+  },
+  bigScore: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  controlsRow: {
+    width: '100%',
+    marginBottom: 10,
+  },
+  numpad: {
+    marginTop: 6,
+    width: '100%',
     alignItems: 'center',
   },
-  arrowContainer: {
-    marginBottom: 10,
-  },
-  arrowRow: {
+  numpadRow: {
     flexDirection: 'row',
-    gap: 10,
+    width: '100%',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  nKey: {
+    flex: 1,
+    marginHorizontal: 4,
+    paddingVertical: 8,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 6,
+    alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
   },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 10,
+  nKeyText: {
+    fontSize: 18,
+    fontWeight: '700',
   },
 });

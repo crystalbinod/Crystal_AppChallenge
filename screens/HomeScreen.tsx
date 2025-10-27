@@ -1,10 +1,16 @@
 // screens/HomeScreen.tsx
-import * as React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Button,TouchableOpacity, Image, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useFonts } from 'expo-font';
+import { auth, db } from '../lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { useWindowDimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 export default function HomeScreen() {
   // load custom fonts
@@ -14,7 +20,27 @@ export default function HomeScreen() {
     'RetroBoulevard': require('../assets/Retro Boulevard.ttf'),
     'Pixel': require('../assets/pixel.ttf'),
   });
+  const [displayName, setDisplayName] = useState('');
+  React.useEffect(() => {
+  const fetchUserName = async () => {
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        // Reference to that user's doc in Firestore
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
 
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setDisplayName(userData.displayName || 'No Name');
+        } else {
+          console.log('No such document!');
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    }
+  };});
   // get the navigation object with proper typing for RootStackParamList
   // this makes sure TypeScript knows 'Details' exists and accepts 'id' as a param
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -98,6 +124,8 @@ export default function HomeScreen() {
             Job
           </Text>
         </TouchableOpacity>
+
+        
       </View>
 
       {/* RIGHT COLUMN - Second Box with a Scroll*/}
@@ -131,7 +159,7 @@ export default function HomeScreen() {
             fontFamily: 'Pixel',
             borderColor: '#63372C'
           }}>
-            Name: (Name)
+            Name: {displayName}
           </Text>
           <Text
             style={{

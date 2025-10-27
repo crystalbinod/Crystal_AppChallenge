@@ -11,12 +11,7 @@ import { useFonts } from 'expo-font';
 export default function JobScreen() {
 
 
-  const [fontsLoaded] = useFonts({
-      'LazyDaze': require('../assets/ATP-Lazy Daze.ttf'),
-      'Windows': require('../assets/windows-bold.ttf'),
-      'RetroBoulevard': require('../assets/Retro Boulevard.ttf'),
-      'Pixel': require('../assets/pixel.ttf'),
-    });
+  
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
@@ -26,7 +21,7 @@ export default function JobScreen() {
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F2E5D7' }}>
       <Text>Job</Text>
       <TouchableOpacity
-                onPress={() => navigation.navigate('Job1')}
+                onPress={() => navigation.navigate('Pong')}
                 activeOpacity={0.7}
               >
                 <Image 

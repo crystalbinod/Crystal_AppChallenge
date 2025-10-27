@@ -1,4 +1,3 @@
-// screens/LoginScreen.tsx
 import React, { useState, useEffect } from "react";
 import { View, Text, Button, Image, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -7,105 +6,89 @@ import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useFonts } from 'expo-font';
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
-// Firebase authentication and Firestore imports
 import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendEmailVerification, updateProfile } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase'; // Firebase config export
+import { auth, db } from '../lib/firebase'; // your exports
 import Constants from "expo-constants";
 
-export default function LoginScreen() {
-  // Navigation hook with type safety
+export default function SignupScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
-  // UI and input states
   const [showGif, setShowGif] = React.useState(false);
-  const [email, setUsername] = React.useState('');
+  const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [loading, setLoading] = useState(false);
 
-//Google Authentication setup
-  // Get credentials from app.json -> extra.googleAuth
-  const extra = Constants.expoConfig?.extra as any;
 
-  // Configure Google Auth Request for Expo
-  const [request, response, promptAsync] = Google.useAuthRequest({
+    const extra = Constants.expoConfig?.extra as any;
+    const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: extra.googleAuth.expoClientId,
-    androidClientId: extra.googleAuth.androidClientId,
-    iosClientId: extra.googleAuth.iosClientId,
-    responseType: "id_token", // Needed for Firebase auth
-    scopes: ["profile", "email"], // Request basic info
+    androidClientId: extra.googleAuth.androidClientId, // optional for Expo Go
+    iosClientId: extra.googleAuth.iosClientId,         // optional for Expo Go
+    // Request an ID token for Firebase:
+    responseType: "id_token",
+    scopes: ["profile", "email"],
   });
 
 
-// Handle Google OAuth response -> Firebase sign-in
-    // When response changes, check if Google sign-in succeeded
-  useEffect(() => {
-    const doLogin = async () => {
-      if (response?.type === "success") {
-        // Get ID token from Google response
-        const idToken = (response.authentication as any)?.idToken || response.params?.id_token;
-        if (!idToken) {
-          Alert.alert("Google sign-in failed", "No ID token received.");
-          return;
-        }
 
-        // Convert Google token into Firebase credentials and log in
-        const credential = GoogleAuthProvider.credential(idToken);
-        await signInWithCredential(auth, credential);
-      }
-    };
-    doLogin();
-  }, [response]);
-
-
-//Monitor auth state 
-  // Runs once when the component mounts
-  // Redirects to the 'Main' screen if the user is already logged in
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
-      }
-    });
-    return unsubscribe; // Cleanup when unmounted
-  }, []);
-
-
-
-//Email/Password login function
-  const signInEmail = async () => {
-    // Basic validation for email format
-
+  const signUpEmail = async () => {
+    if (!username || !username.includes('@')) {
+      Alert.alert('Invalid email', 'Please enter a valid email address.');
+      return;
+    }
+    if (!password || password.length < 6) {
+      Alert.alert('Weak password', 'Password must be at least 6 characters');
+      return;
+    }
     setLoading(true);
     try {
-      // Try Firebase email/password login
-      await signInWithEmailAndPassword(auth, email.trim(), password);
+      // Create the user
+      const userCredential = await createUserWithEmailAndPassword(auth, username.trim(), password);
+      const user = userCredential.user;
 
-      // Show pig GIF for feedback
+      // Optional: write a user document in Firestore for app-specific data
+      await setDoc(doc(db, 'users', user.uid), {
+        email: user.email,
+        displayName: null,
+        createdAt: serverTimestamp(),
+      });
+
+      // Send verification email (optional)
+      try {
+        await sendEmailVerification(user);
+      } catch (err) {
+        console.warn('sendEmailVerification failed', err);
+      }
+
+      // Show GIF then navigate back to Login
       setShowGif(true);
-
-      // Navigate to main screen after short delay
       setTimeout(() => {
-        navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
       }, 900);
-      
     } catch (e: any) {
-      // Handle login errors
-      console.error('signInWithEmail error', e);
-      Alert.alert('Sign-in error', `${e.code || 'error'}: ${e.message || String(e)}`);
+      console.error('signUp error', e);
+      Alert.alert('Sign-up error', `${e.code || 'error'}: ${e.message || String(e)}`);
+      setShowGif(true);
     } finally {
       setLoading(false);
     }
   };
 
- 
+
+
+  const [fontsLoaded] = useFonts({
+    'LazyDaze': require('../assets/ATP-Lazy Daze.ttf'),
+    'Windows': require('../assets/windows-bold.ttf'),
+    'RetroBoulevard': require('../assets/Retro Boulevard.ttf'),
+    'Pixel': require('../assets/pixel.ttf'),
+  });
+
   const handlePress = () => {
     setShowGif(true);
     setTimeout(() => {
-      navigation.navigate('Signup');
+      navigation.navigate('Main');
     }, 900);
   };
-
 
   const styles = StyleSheet.create({
     input: {
@@ -166,24 +149,21 @@ export default function LoginScreen() {
       {/* New Input Fields Below the Login Button */}
       <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder="Username"
         placeholderTextColor="#C97D60"
-        value={email}
+        value={username}
         onChangeText={setUsername}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        textContentType="emailAddress"
       />
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder="*6 or more chars PW*"
         placeholderTextColor="#C97D60"
         secureTextEntry
         value={password}
         onChangeText={setPassword}
       />
 
-      <TouchableOpacity onPress={signInEmail} activeOpacity={0.7}>
+      <TouchableOpacity onPress={signUpEmail} activeOpacity={0.7}>
         <Image 
           source={require('../assets/button.png')}
           style={{
@@ -204,24 +184,10 @@ export default function LoginScreen() {
           fontFamily: 'Pixel',
           textAlign: 'center',
         }}>
-          LOGIN
+          SIGNUP
         </Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
-        
-        <Text style={{
-          
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#63372C',
-          fontSize: 10,
-          fontWeight: 'bold',
-          fontFamily: 'Pixel',
-          textAlign: 'center',
-        }}>
-          signup
-        </Text>
-      </TouchableOpacity>
+    
 
       
     </View>
