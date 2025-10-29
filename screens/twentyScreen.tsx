@@ -239,6 +239,13 @@ export default function Game2048Screen() {
     return out;
   }, [grid, cellSize]);
 
+
+
+
+
+
+
+  
   return (
     <GestureHandlerRootView style={styles.root}>
       <GestureDetector gesture={gesture}>

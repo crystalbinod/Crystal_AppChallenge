@@ -15,48 +15,138 @@ export default function ProfileScreen() {
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const screenWidth= useWindowDimensions().width
-  const [name, setName] = useState('');
+   // Keep all user fields in a single object so UI + Firestore stay in sync.
+  const [userData, setUserData] = useState<{ [k: string]: any }>({
+    displayName: '',
+    username: '',
+    password: '',
+    job: '',
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Generic getter for a field (keeps backwards compatibility)
+  const getUserFieldValue = async (fieldKey: string): Promise<any | null> => {
+    const u = auth.currentUser;
+    if (!u) return null;
+    const docRef = doc(db, 'users', u.uid);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    return data[fieldKey] ?? null;
+  };
+
+  // Fetch the user's document once when the component mounts.
   useEffect(() => {
-    // Load saved name
-    AsyncStorage.getItem('userText').then((savedName) => {
-      if (savedName) setName(savedName);
-    });
+    let mounted = true;
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        const u = auth.currentUser;
+        if (!u) {
+          console.warn('No auth.user available yet');
+          setLoading(false);
+          return;
+        }
+        const docRef = doc(db, 'users', u.uid);
+        const snap = await getDoc(docRef);
+        if (!snap.exists()) {
+          console.log('User doc not found; leaving defaults.');
+          setLoading(false);
+          return;
+        }
+        if (!mounted) return;
+        const data = snap.data() || {};
+        // Pick fields you want; this just spreads everything
+        setUserData(prev => ({ ...prev, 
+          ...data,
+          username: data.email ?? '', 
+          job: data.job ?? '',
+      
+         
+         }));
+      } catch (err) {
+        console.error('fetchAll error', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    fetchAll();
+    return () => { mounted = false; };
   }, []);
 
-  const handleChange = async (value: string) => {
-    // local update
-    setName(value);
+  // Generic setter: updates local state immediately, writes to Firestore (merge).
+  const handleChange = async (fieldKey: string, value: string) => {
+    // Update UI immediately
+    setUserData(prev => ({ ...prev, [fieldKey]: value }));
 
-    // persist to AsyncStorage (best-effort)
+    // Write to Firestore
     try {
-      await AsyncStorage.setItem('userText', value);
+      const u = auth.currentUser;
+      if (!u) {
+        console.warn('No user signed-in; cannot write to Firestore');
+        return;
+      }
+      await setDoc(doc(db, 'users', u.uid), { [fieldKey]: value }, { merge: true });
+      console.log(`Updated ${fieldKey} in Firestore:`, value);
     } catch (e) {
-      console.warn('Failed to save name to AsyncStorage', e);
-    }
-
-    // persist to Firestore under users/{uid}
-    const user = auth.currentUser;
-    if (!user) {
-      // not signed in — nothing to save server-side
-      return;
-    }
-
-    try {
-      await setDoc(doc(db, 'users', user.uid), { displayName: value }, { merge: true });
-    } catch (e) {
-      console.error('Failed to save user name to Firestore', e);
+      console.error(`Failed to update ${fieldKey} in Firestore:`, e);
     }
   };
 
-  return (
 
+
+
+
+
+
+
+
+
+
+
+const styles = StyleSheet.create({
+    input: {
+      height: 23,
+      minWidth:230,
+      paddingHorizontal: 5,
+      marginHorizontal: 8,
+      borderWidth: 2,
+      fontSize:12,
+      fontFamily:'Pixel',
+      backgroundColor:'#C97D60',
+      color:'#080808ff',
+      borderRadius:10,
+      borderColor:"#080808ff"},
+    scroll:{
+      flex: 1, 
+      backgroundColor: '#F2E5D7',
+      flexDirection: 'space-evenly'
+    },
+    text:{
+      marginLeft:17,
+      fontSize:12,
+      fontFamily:'Pixel',
+      color:'#C97D60',
+      marginBottom:7,
+    }
     
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+  return (
     // Center the content in the screen
-    <ScrollView style={{ 
-                flex: 1, 
-                backgroundColor: '#F2E5D7',
-                flexDirection: 'space-evenly'
-              }}>
+    <ScrollView style={styles.scroll}>
                 
                 
                 <View style={{ 
@@ -66,9 +156,12 @@ export default function ProfileScreen() {
           }}>
                {/* column 1 */}
                   <View style={{ 
-                          flex: 1, 
+                          flex: 1.5, 
                           backgroundColor: '#F2E5D7',
-                          margin:20,
+                          marginVertical:20,
+                          marginLeft:20,
+                          marginRight:15,
+                          
                           
                         }}>
                           {/* row 1 */}
@@ -76,8 +169,8 @@ export default function ProfileScreen() {
                           <View style={{
                             backgroundColor:'#63372C',
                             borderRadius:25,
-                            width: screenWidth/2-15,
-                            height: 100,
+                            
+                            height: 150,
                             
                             
                             
@@ -89,34 +182,43 @@ export default function ProfileScreen() {
                             fontWeight:"bold" ,
                             margin:5,
                             marginLeft:17,
-                            
 
                             }}>
                               login info:
                               </Text>
-                              <TextInput
-                              placeholder='name?'
-                              onChangeText={handleChange}
-                              value={name}
-                              style={{
-                                height: 23,
-                                padding: 5,
-                                marginHorizontal: 8,
-                                borderWidth: 2,
-                                fontSize:12,
-                                fontFamily:'Pixel',
-                                backgroundColor:'#C97D60',
-                                borderRadius:10,
-                                borderColor:"#44251dff"
-                              }}
+                              <Text style={styles.text}>Name:  
+                                  <TextInput
+                                      placeholder="name?"
+                                      onChangeText={(t) => handleChange('displayName', t)}
+                                      value={userData.displayName}
+                                      style={styles.input}
+                              /></Text>
+
+                               <Text style={styles.text}>username: 
+                                
+                                <Text style={styles.input}>
+                                {userData.username}</Text>
+                                  
+                              </Text>
+
+                               <Text style={styles.text}>password: 
+                                <TextInput
+                                      placeholder="password?"
+                                      onChangeText={(t) => handleChange('password', t)}
+                                      value={userData.password}
+                                      style={styles.input}
                               />
+                                
+
+                                  </Text>
+                             
                           </View>
 
                           {/* row 2 */}
                           <View style={{
                             backgroundColor:'#63372C',
                             borderRadius:25,
-                            width: screenWidth/2-15,
+                            
                             height: 300,
                             marginTop:10,
                             
@@ -134,6 +236,14 @@ export default function ProfileScreen() {
                             }}>
                               status:
                               </Text>
+
+                              <Text style={styles.text}>job: 
+                                
+                                <Text style={styles.input}>
+                                {userData.job}</Text>
+                                  
+                              </Text>
+
                           </View>
                           
                           
@@ -142,10 +252,11 @@ export default function ProfileScreen() {
                 
                 {/* column 2 */}
                 <View style={{ 
-                      flex: 1, 
+                      flex: 0.9, 
                       backgroundColor: '#F2E5D7',
-                      margin:20,  
-                          
+                      marginVertical:20, 
+                      marginRight:20, 
+                         
                       }}>
 
                       {/* row 1 */}
@@ -153,7 +264,7 @@ export default function ProfileScreen() {
                       <View style={{
                             backgroundColor:'#63372C',
                             borderRadius:15,
-                            width: screenWidth/2-50,
+                            
                             height: 150,
                             
                             

@@ -21,7 +21,7 @@ export default function JobScreen() {
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F2E5D7' }}>
       <Text>Job</Text>
       <TouchableOpacity
-                onPress={() => navigation.navigate('Pong')}
+                onPress={() => navigation.navigate('Dino')}
                 activeOpacity={0.7}
               >
                 <Image 

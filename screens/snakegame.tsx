@@ -199,6 +199,15 @@ export default function SnakeGame() {
     }
   }
 
+
+
+
+
+
+
+
+
+  
   return (
     <GestureHandlerRootView style={styles.container}>
       <GestureDetector gesture={gesture}>

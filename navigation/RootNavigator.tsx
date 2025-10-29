@@ -15,6 +15,10 @@ import twentyScreen from '../screens/twentyScreen';
 import SignupScreen from '../screens/SignupScreen';
 import MemoryScreen from '../screens/MemoryScreen';
 import PongScreen from '../screens/PongScreen';
+import CupPongScreen from '../screens/CupPongScreen';
+import MoleScreen from '../screens/MoleScreen';
+import FlappyBirdScreen from '../screens/FlappyBirdScreen';
+import DinoScreen from '../screens/DinoScreen';
 import TabsNavigator from './tabs/TabsNavigator';
 
 
@@ -38,6 +42,10 @@ export type RootStackParamList = {
   2048:undefined;
   Memory:undefined;
   Pong:undefined;
+  CupPong:undefined;
+  Mole:undefined;
+  FlappyBird:undefined;
+  Dino:undefined;
 };
 
 // Create a Stack Navigator instance using the defined type
@@ -89,6 +97,11 @@ export default function RootNavigator() {
       <Stack.Screen name="2048" component={twentyScreen} />
       <Stack.Screen name="Memory" component={MemoryScreen} />
       <Stack.Screen name="Pong" component={PongScreen} />
+      <Stack.Screen name="Cup-Pong" component={CupPongScreen} />
+      <Stack.Screen name="Whack-A-Mole" component={MoleScreen} />
+      <Stack.Screen name="FlappyBird" component={FlappyBirdScreen} />
+      <Stack.Screen name="Dino" component={DinoScreen} />
+
     </Stack.Navigator>
   );
 

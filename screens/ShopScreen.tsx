@@ -11,6 +11,15 @@ export default function ShopScreen() {
       'Pixel': require('../assets/pixel.ttf'),
     });
 
+
+
+
+
+
+
+
+
+    
     const styles = StyleSheet.create({
       box:{
         margin: 7,
@@ -52,6 +61,15 @@ export default function ShopScreen() {
             marginHorizontal:15
       }
     })
+
+
+
+
+
+
+
+
+
 
   return (
     // Center the content in the screen

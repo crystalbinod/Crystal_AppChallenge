@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useFonts } from 'expo-font';
-import * as WebBrowser from "expo-web-browser";
+
 import * as Google from "expo-auth-session/providers/google";
 // Firebase authentication and Firestore imports
 import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendEmailVerification, updateProfile } from "firebase/auth";
@@ -124,6 +124,27 @@ export default function LoginScreen() {
       textAlign: 'center',
     },
   });
+  const [fontsLoaded] = useFonts({
+      'LazyDaze': require('../assets/ATP-Lazy Daze.ttf'),
+      'Windows': require('../assets/windows-bold.ttf'),
+      'RetroBoulevard': require('../assets/Retro Boulevard.ttf'),
+      'Pixel': require('../assets/pixel.ttf'),
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   return (
     <View style={{ 

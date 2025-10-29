@@ -26,7 +26,6 @@ export default function HomeScreen() {
     const user = auth.currentUser;
     if (user) {
       try {
-        // Reference to that user's doc in Firestore
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
 
@@ -40,10 +39,35 @@ export default function HomeScreen() {
         console.error('Error fetching user data:', error);
       }
     }
-  };});
+  };
+
+  // Call the async function after defining it
+  fetchUserName();
+}, []); // ✅ Add dependency array so it only runs once
+
   // get the navigation object with proper typing for RootStackParamList
   // this makes sure TypeScript knows 'Details' exists and accepts 'id' as a param
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   // main screen layout with two columns
   return (
@@ -157,7 +181,8 @@ export default function HomeScreen() {
             borderWidth: 4,
             width: 150,
             fontFamily: 'Pixel',
-            borderColor: '#63372C'
+            borderColor: '#63372C',
+            color: '#000000ff',
           }}>
             Name: {displayName}
           </Text>

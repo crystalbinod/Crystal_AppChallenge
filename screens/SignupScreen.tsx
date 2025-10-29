@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useFonts } from 'expo-font';
-import * as WebBrowser from "expo-web-browser";
+
 import * as Google from "expo-auth-session/providers/google";
 import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendEmailVerification, updateProfile } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -50,15 +50,24 @@ export default function SignupScreen() {
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
         displayName: null,
+        job: null,
+        food:0,
+        utilities:0,
+        credit:null,
+        creditCardBill:0,
+        password: password,
+        housing:"rent",
+        lifeStatus:1,
         createdAt: serverTimestamp(),
+        emergencyAlerts:null,
+        reminders:null,
+        day:1,
+        checkingAccount:100,
+
       });
 
       // Send verification email (optional)
-      try {
-        await sendEmailVerification(user);
-      } catch (err) {
-        console.warn('sendEmailVerification failed', err);
-      }
+      
 
       // Show GIF then navigate back to Login
       setShowGif(true);
@@ -90,6 +99,16 @@ export default function SignupScreen() {
     }, 900);
   };
 
+
+
+
+
+
+
+
+
+
+
   const styles = StyleSheet.create({
     input: {
       height: 40,
@@ -107,6 +126,17 @@ export default function SignupScreen() {
       textAlign: 'center',
     },
   });
+
+
+
+
+
+
+
+
+
+
+
 
   return (
     <View style={{ 
@@ -187,9 +217,7 @@ export default function SignupScreen() {
           SIGNUP
         </Text>
       </TouchableOpacity>
-    
 
-      
     </View>
   );
 }
