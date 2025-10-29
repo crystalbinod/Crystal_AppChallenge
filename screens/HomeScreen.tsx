@@ -20,31 +20,67 @@ export default function HomeScreen() {
     'RetroBoulevard': require('../assets/Retro Boulevard.ttf'),
     'Pixel': require('../assets/pixel.ttf'),
   });
-  const [displayName, setDisplayName] = useState('');
-  React.useEffect(() => {
-  const fetchUserName = async () => {
-    const user = auth.currentUser;
-    if (user) {
-      try {
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
+  const [userData, setUserData] = useState<{ [k: string]: any }>({
+    displayName: '',
+    job: '',
+    day: '',
+    reminders: '',
+    emergencyAlerts: '',
+  });
+  const [loading, setLoading] = useState(true);
 
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setDisplayName(userData.displayName || 'No Name');
-        } else {
-          console.log('No such document!');
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      }
-    }
+  // Generic getter for a field (keeps backwards compatibility)
+  const getUserFieldValue = async (fieldKey: string): Promise<any | null> => {
+    const u = auth.currentUser;
+    if (!u) return null;
+    const docRef = doc(db, 'users', u.uid);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    return data[fieldKey] ?? null;
   };
 
-  // Call the async function after defining it
-  fetchUserName();
-}, []); // ✅ Add dependency array so it only runs once
+  // Fetch the user's document once when the component mounts.
+  useEffect(() => {
+    let mounted = true;
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        const u = auth.currentUser;
+        if (!u) {
+          console.warn('No auth.user available yet');
+          setLoading(false);
+          return;
+        }
+        const docRef = doc(db, 'users', u.uid);
+        const snap = await getDoc(docRef);
+        if (!snap.exists()) {
+          console.log('User doc not found; leaving defaults.');
+          setLoading(false);
+          return;
+        }
+        if (!mounted) return;
+        const data = snap.data() || {};
+        // Pick fields you want; this just spreads everything
+        setUserData(prev => ({ ...prev, 
+          ...data,
+          displayName: data.displayName ?? '',
+          job: data.job ?? '',
+          day: data.day ?? '',
+          reminders: data.reminders ?? '',
+          emergencyAlerts: data.emergencyAlerts ?? '',
+         
+         }));
+      } catch (err) {
+        console.error('fetchAll error', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
 
+    fetchAll();
+    return () => { mounted = false; };
+  }, []);
   // get the navigation object with proper typing for RootStackParamList
   // this makes sure TypeScript knows 'Details' exists and accepts 'id' as a param
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -184,7 +220,7 @@ export default function HomeScreen() {
             borderColor: '#63372C',
             color: '#000000ff',
           }}>
-            Name: {displayName}
+            Name: {userData.displayName}
           </Text>
           <Text
             style={{
@@ -201,7 +237,7 @@ export default function HomeScreen() {
               fontFamily: 'Pixel',
               fontWeight: 'bold',
             }}>
-              Day:
+              Day:{userData.day}
             </Text>
           </Text>
         </View>
@@ -226,7 +262,7 @@ export default function HomeScreen() {
             fontFamily: 'Pixel',
             borderColor: '#63372C' 
           }}>
-            Job:
+            Job: {userData.job}
           </Text>
           <TouchableOpacity
             style={{
@@ -259,7 +295,7 @@ export default function HomeScreen() {
           fontFamily: 'Pixel',
           borderColor: '#63372C'
         }}>
-          Reminders: klasjflsdlfkj
+          Reminders: {userData.reminders}
         </Text>
 
         {/* Emergency Alerts Section */}
@@ -274,7 +310,7 @@ export default function HomeScreen() {
           fontFamily: 'Pixel',
           borderColor: '#63372C'
         }}>
-          Emergency Alerts: ksdlk fjlksdjf
+          Emergency Alerts: {userData.emergencyAlerts}
         </Text>
         
       </ScrollView>

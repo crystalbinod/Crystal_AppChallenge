@@ -21,6 +21,13 @@ export default function ProfileScreen() {
     username: '',
     password: '',
     job: '',
+    housing:'',
+    lifeStatus:'',
+    utilities:'',
+    food:'',
+    credit:'',
+    creditCardBill:'',
+    creditCardLimit:'',
   });
   const [loading, setLoading] = useState(true);
 
@@ -61,7 +68,14 @@ export default function ProfileScreen() {
           ...data,
           username: data.email ?? '', 
           job: data.job ?? '',
-      
+          housing: data.housing ?? '',
+          lifeStatus: data.lifeStatus ?? '',
+          utilities: data.utilities ?? '',
+          food: data.food ?? '',
+          credit: data.credit ?? '',
+          creditCardBill: data.creditCardBill ?? '',
+
+          creditCardLimit: data.creditCardLimit ?? '',
          
          }));
       } catch (err) {
@@ -156,10 +170,10 @@ const styles = StyleSheet.create({
           }}>
                {/* column 1 */}
                   <View style={{ 
-                          flex: 1.5, 
+                          flex: 1.8, 
                           backgroundColor: '#F2E5D7',
                           marginVertical:20,
-                          marginLeft:20,
+                          marginLeft:10,
                           marginRight:15,
                           
                           
@@ -243,6 +257,13 @@ const styles = StyleSheet.create({
                                 {userData.job}</Text>
                                   
                               </Text>
+                              <Text style={styles.text}>housing: 
+                                
+                                <Text style={styles.input}>
+                                {userData.housing}</Text>
+                                  
+                              </Text>
+                              
 
                           </View>
                           
@@ -255,7 +276,7 @@ const styles = StyleSheet.create({
                       flex: 0.9, 
                       backgroundColor: '#F2E5D7',
                       marginVertical:20, 
-                      marginRight:20, 
+                      marginRight:10, 
                          
                       }}>
 
@@ -265,7 +286,7 @@ const styles = StyleSheet.create({
                             backgroundColor:'#63372C',
                             borderRadius:15,
                             
-                            height: 150,
+                            height: 200,
                             
                             
                             
@@ -280,7 +301,38 @@ const styles = StyleSheet.create({
                             
 
                             }}>
-                              sefdsasdfsdf
+                              Financial Info:
+                              </Text>
+                              <Text style={styles.text}>food: 
+                                
+                                <Text style={styles.input}>
+                                {userData.food}</Text>
+                                  
+                              </Text>
+                              <Text style={styles.text}>utilities: 
+                                
+                                <Text style={styles.input}>
+                                {userData.utilities}</Text>
+                                  
+                              </Text>
+                              <Text style={styles.text}>credit score: 
+                                
+                                <Text style={styles.input}>
+                                {userData.credit}</Text>
+                                  
+                              </Text>
+                              <Text style={styles.text}>credit bill: 
+                                
+                                <Text style={styles.input}>
+                                {userData.creditCardBill}</Text>
+                                  
+                              </Text>
+
+                              <Text style={styles.text}>credit limit: 
+                                
+                                <Text style={styles.input}>
+                                {userData.creditCardLimit}</Text>
+                                  
                               </Text>
                           </View>
                           

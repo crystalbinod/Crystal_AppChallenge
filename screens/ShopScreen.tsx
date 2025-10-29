@@ -19,7 +19,7 @@ export default function ShopScreen() {
 
 
 
-    
+
     const styles = StyleSheet.create({
       box:{
         margin: 7,
@@ -141,12 +141,12 @@ export default function ShopScreen() {
           
           paddingRight: 10
         }}>
-        <View style={styles.box}>
-          <Text style={styles.textbox}>Food</Text>
+         <View style={styles.box}>
+          <Text style={styles.textbox}>Utilities</Text>
            <Image 
-                    source={require('../assets/pastry.png')}
+                    source={require('../assets/utilities.png')}
                     style={{
-                      marginTop:14 ,
+                      marginVertical:13 ,
                       
                       width:150,
                       height:100,
@@ -154,25 +154,42 @@ export default function ShopScreen() {
                     }}
                   />
             
-
-            <TouchableOpacity>
-                    
-            </TouchableOpacity>
+            <Text style={{
+                
+                alignSelf:"center", 
+                fontFamily:'Pixel',
+                fontSize:17,}}>
+              $2
+              <TouchableOpacity>
+                  <Text style={styles.button}>Buy</Text>
+              </TouchableOpacity>
+            </Text>
+            
         </View>
 
 
         <View style={styles.box}>
-          <Text style={styles.textbox}>House</Text>
+          <Text style={styles.textbox}>car</Text>
 
            <Image 
-                    source={require('../assets/house2.png')}
+                    source={require('../assets/car.png')}
                     style={{
-                      marginTop:5,
-                      width:120,
-                      height:120,
+                      marginTop:30,
+                      marginBottom:10,
+                      width:200,
+                      height:80,
                       alignSelf:"center",
                     }}
                   />
+           <Text style={{
+                alignSelf:"center", 
+                fontFamily:'Pixel',
+                fontSize:17}}>
+              $50,000
+              <TouchableOpacity>
+                  <Text style={styles.button}>Buy</Text>
+              </TouchableOpacity>
+            </Text>
         </View>
       </View>
         

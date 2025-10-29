@@ -10,7 +10,7 @@ import FinancialSimScreen from '../screens/FinancialSimScreen';
 import BankScreen from '../screens/BankScreen';
 import LearnScreen from '../screens/LearnScreen';
 import snakegame from '../screens/snakegame';
-import Job1Screen from '../screens/Job1Screen';
+import MineSweeperScreen from '../screens/MineSweeperScreen';
 import twentyScreen from '../screens/twentyScreen';
 import SignupScreen from '../screens/SignupScreen';
 import MemoryScreen from '../screens/MemoryScreen';
@@ -19,6 +19,10 @@ import CupPongScreen from '../screens/CupPongScreen';
 import MoleScreen from '../screens/MoleScreen';
 import FlappyBirdScreen from '../screens/FlappyBirdScreen';
 import DinoScreen from '../screens/DinoScreen';
+import JobGeneratorScreen from '../screens/JobGeneratorScreen';
+import PartTimeScreen from '../screens/PartTimeScreen';
+import CompanyScreen from '../screens/CompanyScreen';
+import FreelanceScreen from '../screens/FreelanceScreen';
 import TabsNavigator from './tabs/TabsNavigator';
 
 
@@ -36,16 +40,20 @@ export type RootStackParamList = {
   FinancialSim: undefined;
   Bank: undefined;
   Learn: undefined;
-  Job1:  undefined;
+  MineSweeper:  undefined;
   snakegame:undefined;
   Signup:undefined;
   2048:undefined;
   Memory:undefined;
   Pong:undefined;
   CupPong:undefined;
-  Mole:undefined;
+  mole:undefined;
   FlappyBird:undefined;
   Dino:undefined;
+  JobGenerator:undefined;
+  PartTime:undefined;
+  Company:undefined;
+  Freelance:undefined;
 };
 
 // Create a Stack Navigator instance using the defined type
@@ -91,7 +99,7 @@ export default function RootNavigator() {
       <Stack.Screen name="FinancialSim" component={FinancialSimScreen} />
       <Stack.Screen name="Bank" component={BankScreen} />
       <Stack.Screen name="Learn" component={LearnScreen} />
-      <Stack.Screen name="Job1" component={Job1Screen} />
+      <Stack.Screen name="MineSweeper" component={MineSweeperScreen} />
       <Stack.Screen name="snakegame" component={snakegame} />
       <Stack.Screen name="Signup" component={SignupScreen} />
       <Stack.Screen name="2048" component={twentyScreen} />
@@ -101,6 +109,10 @@ export default function RootNavigator() {
       <Stack.Screen name="Whack-A-Mole" component={MoleScreen} />
       <Stack.Screen name="FlappyBird" component={FlappyBirdScreen} />
       <Stack.Screen name="Dino" component={DinoScreen} />
+      <Stack.Screen name="JobGenerator" component={JobGeneratorScreen} />
+      <Stack.Screen name="PartTime" component={PartTimeScreen} />
+      <Stack.Screen name="Company" component={CompanyScreen} />
+      <Stack.Screen name="Freelance" component={FreelanceScreen} />
 
     </Stack.Navigator>
   );

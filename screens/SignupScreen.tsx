@@ -63,6 +63,8 @@ export default function SignupScreen() {
         reminders:null,
         day:1,
         checkingAccount:100,
+        creditcardLimit:100,
+        jobDone:0
 
       });
 
