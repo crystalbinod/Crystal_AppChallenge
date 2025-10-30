@@ -59,7 +59,7 @@ export default function SignupScreen() {
                 creditcard1:100,
                },
             creditLimit:100, 
-            creditScore:null},
+            creditScore:600},
         password: password,
         housing:"rent",
         lifeStatus:1,

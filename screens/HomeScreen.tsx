@@ -1,13 +1,13 @@
 // screens/HomeScreen.tsx
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Button,TouchableOpacity, Image, ScrollView, Modal, Pressable, StyleSheet, TextInput } from 'react-native';
+import { View, Text, Button,TouchableOpacity, Image, ScrollView, Modal, Pressable, StyleSheet, TextInput, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useFonts } from 'expo-font';
 import { auth, db } from '../lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc, increment, runTransaction, deleteField } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc, increment, runTransaction, deleteField, deleteDoc } from 'firebase/firestore';
+import { signOut, deleteUser } from 'firebase/auth';
 import { useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CompanyStopwatch from '../lib/stopwatch';
@@ -32,6 +32,10 @@ export default function HomeScreen() {
     emergencyAlerts: '',
   });
   const [loading, setLoading] = useState(true);
+
+  // show a one-time learn hint arrow for new users
+  const [showLearnHint, setShowLearnHint] = useState(false);
+  const pulse = useRef(new Animated.Value(0)).current;
 
   // Generic getter for a field (keeps backwards compatibility)
   const getUserFieldValue = async (fieldKey: string): Promise<any | null> => {
@@ -75,6 +79,10 @@ export default function HomeScreen() {
           emergencyAlerts: data.emergencyAlerts ?? '',
          
          }));
+        // show one-time learn hint if user hasn't seen it yet
+        try {
+          if (!data?.seenLearnHint) setShowLearnHint(true);
+        } catch (e) { /* noop */ }
       } catch (err) {
         console.error('fetchAll error', err);
       } finally {
@@ -267,6 +275,63 @@ export default function HomeScreen() {
     }
   };
 
+  // Compute and persist a heuristic credit score for the signed-in user
+  const computeAndSaveCreditScore = async (userRef: any) => {
+    try {
+      const snap = await getDoc(userRef);
+      if (!snap.exists()) return;
+      const d = snap.data() as any;
+      const credit = d?.credit ?? {};
+
+      // 1) Payment history on-time check (30%) — look for rent and credit payments
+      const paymentHistory = Array.isArray(credit.paymentHistory) ? credit.paymentHistory : [];
+      const dayVal = Number(d?.day) || 0;
+      const expectedPayments = Math.max(1, Math.floor(dayVal / 15));
+      // count on-time payments for rent & credit (fallback: count payments of those types)
+      let onTimeCount = 0;
+      for (const p of paymentHistory) {
+        try {
+          const t = String(p?.type || '').toLowerCase();
+          if (t.includes('rent') || t.includes('credit')) {
+            if (p?.onTime === true) onTimeCount += 1;
+            else if (p?.onTime == null) onTimeCount += 1; // treat unspecified as yes to be forgiving
+          }
+        } catch (e) { /* ignore malformed entries */ }
+      }
+      const paymentRatio = Math.min(1, onTimeCount / expectedPayments);
+
+      // 2) Loans burden (20%) — more loan principal reduces score
+      const loansMap = d?.loans ?? {};
+      let totalLoan = 0;
+      try { Object.values(loansMap).forEach((L: any) => { totalLoan += Number(L?.amount || L?.remaining || 0) || 0; }); } catch (e) { }
+      const loanFactor = 1 - Math.min(1, totalLoan / 10000); // cap at 10k
+
+      // 3) Length of credit history (20%) — use days as proxy
+      const lengthYears = dayVal / 365;
+      const lengthNorm = Math.min(1, lengthYears / 5);
+
+      // 4) Utilization (30%) — use lastClosingBalance when available (closing statement is 5 days before due)
+      const creditLimit = Number(credit.creditLimit) || 0;
+      const lastClosing = (credit.lastClosingBalance != null) ? Number(credit.lastClosingBalance) : null;
+      const currentBalance = Number(credit.creditCardbill || credit.creditCardBill || 0) || 0;
+      const balanceForUtil = (lastClosing != null ? lastClosing : currentBalance);
+      const utilization = (creditLimit > 0) ? (balanceForUtil / creditLimit) : 0;
+      const utilizationScore = 1 - Math.min(1, utilization);
+
+      // combine weights: payments 30%, utilization 30%, loans 20%, length 20%
+      const combined = (paymentRatio * 0.30) + (utilizationScore * 0.30) + (loanFactor * 0.20) + (lengthNorm * 0.20);
+      const score = Math.round(300 + combined * 550);
+      const finalScore = Math.max(300, Math.min(850, score));
+
+      await updateDoc(userRef, { ['credit.creditScore']: finalScore, ['credit.creditScoreUpdatedAt']: serverTimestamp() });
+      // update local UI
+      setUserData(prev => ({ ...prev, credit: { ...(prev?.credit || {}), creditScore: finalScore } }));
+      console.log('Computed and saved credit score', finalScore);
+    } catch (e) {
+      console.warn('computeAndSaveCreditScore failed', e);
+    }
+  };
+
   // finalizeNextDay: called after all required payments for next day are made when pendingNextDay is true
   const finalizeNextDay = async () => {
     const u = auth.currentUser;
@@ -291,6 +356,13 @@ export default function HomeScreen() {
       try {
         const freshSnap = await getDoc(userRef);
         const fresh = freshSnap.exists() ? (freshSnap.data() as any) : {};
+        // Recalculate credit score every 15 days
+        try {
+          const newDayVal = Number(fresh.day) || 0;
+          if ((newDayVal % 15) === 0) await computeAndSaveCreditScore(userRef);
+        } catch (scoreErr) {
+          console.warn('Recalc credit score failed in finalizeNextDay', scoreErr);
+        }
         const jobStrFresh = fresh && fresh.job ? String(fresh.job).toLowerCase() : '';
         const jobDoneFlag = fresh && String(fresh.jobDone || '').toLowerCase() === 'yes';
         const dayVal = Number(fresh.day) || (Number(userData.day) || 0) + 1;
@@ -356,6 +428,32 @@ export default function HomeScreen() {
       finalizeNextDay();
     }
   }, [paymentsDue, pendingNextDay]);
+
+  // start a small pulsing animation for the learn hint
+  useEffect(() => {
+    if (!showLearnHint) return;
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 700, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [showLearnHint, pulse]);
+
+  // dismiss and persist that the user has seen the learn hint
+  const dismissLearnHint = async () => {
+    setShowLearnHint(false);
+    try {
+      const u = auth.currentUser;
+      if (!u) return;
+      const userRef = doc(db, 'users', u.uid);
+      await updateDoc(userRef, { seenLearnHint: true });
+    } catch (e) {
+      console.warn('Failed to persist seenLearnHint', e);
+    }
+  };
 
 
 
@@ -557,6 +655,72 @@ export default function HomeScreen() {
                 const userSnap = await getDoc(userRef);
                 const userData = userSnap.exists() ? userSnap.data() : {};
 
+                // --- FOOD / STARVATION LOGIC ---
+                // Every time Next Day is pressed, subtract 2 from `food`.
+                // Track consecutive days at 0 with `foodZeroDays`. If the user
+                // has been at 0 for more than 5 days before pressing, treat
+                // them as dead: show alert and delete the account (best-effort).
+                try {
+                  let userDied = false;
+                  await runTransaction(db, async (tx) => {
+                    const s = await tx.get(userRef);
+                    if (!s.exists()) throw new Error('User doc missing');
+                    const d = s.data() as any;
+                    const foodNow = Number(d?.food) || 0;
+                    const zeroDaysNow = Number(d?.foodZeroDays) || 0;
+
+                    // If food is already zero and has been zero for more than 5 days -> death
+                    if (foodNow === 0 && zeroDaysNow > 5) {
+                      userDied = true;
+                      // mark dead flag in doc so server-side inspection can see it
+                      tx.update(userRef, { dead: true });
+                      return;
+                    }
+
+                    // subtract 2 from food (clamp to 0) and update zero-day counter
+                    const newFood = Math.max(0, foodNow - 2);
+                    const newZeroDays = (foodNow === 0) ? (zeroDaysNow + 1) : 0;
+                    tx.update(userRef, { food: newFood, foodZeroDays: newZeroDays });
+                  });
+
+                  if (userDied) {
+                    Alert.alert('You died', 'You have starved to death. Your account will be deleted.');
+                    // Attempt to delete the auth account; if that fails (requires recent login),
+                    // remove Firestore doc and sign the user out as a fallback.
+                    try {
+                      await deleteUser(u);
+                    } catch (delErr) {
+                      console.warn('deleteUser failed or requires recent login', delErr);
+                    }
+
+                    try {
+                      // best-effort removal of user document
+                      await deleteDoc(userRef);
+                    } catch (docErr) {
+                      console.warn('Failed to delete user document', docErr);
+                    }
+
+                    try {
+                      await signOut(auth);
+                    } catch (soErr) {
+                      console.warn('Failed to sign out after deletion', soErr);
+                    }
+
+                    // navigate to Login screen (best-effort)
+                    try {
+                      navigation.navigate('Login');
+                    } catch (navErr) {
+                      /* noop */
+                    }
+
+                    // stop further Next Day work
+                    return;
+                  }
+                } catch (foodErr) {
+                  console.warn('Food transaction failed', foodErr);
+                }
+                // --- end FOOD / STARVATION LOGIC ---
+
                 // get elapsed ms from each stopwatch and floor to minutes
                 const companyMs = (CompanyStopwatch && typeof CompanyStopwatch.get === 'function') ? CompanyStopwatch.get() : 0;
                 const freelanceMs = (FreelanceStopwatch && typeof FreelanceStopwatch.get === 'function') ? FreelanceStopwatch.get() : 0;
@@ -709,6 +873,13 @@ export default function HomeScreen() {
                 try {
                   const freshSnap = await getDoc(userRef);
                   const fresh = freshSnap.exists() ? (freshSnap.data() as any) : {};
+                  // Recalculate credit score every 15 days
+                  try {
+                    const newDayVal = Number(fresh.day) || 0;
+                    if ((newDayVal % 15) === 0) await computeAndSaveCreditScore(userRef);
+                  } catch (scoreErr) {
+                    console.warn('Recalc credit score failed in Next Day flow', scoreErr);
+                  }
                   const jobStrFresh = fresh && fresh.job ? String(fresh.job).toLowerCase() : '';
                   const jobDoneFlag = fresh && String(fresh.jobDone || '').toLowerCase() === 'yes';
                   const dayVal = Number(fresh.day) || (Number(userData.day) || 0) + 1;
@@ -818,6 +989,36 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
   {/* Emergency Alerts Section */}
+        <TouchableOpacity
+          onPress={async () => {
+            try {
+              // mark seen and navigate
+              await dismissLearnHint();
+              navigation.navigate('Learn');
+            } catch (e) {
+              console.warn('Navigate to Learn failed', e);
+            }
+          }}
+          activeOpacity={0.7}
+          style={{
+            margin: 7,
+            flex: 1,
+            backgroundColor: '#ffd27aff',
+            marginVertical: 7,
+            marginRight: 10,
+            borderRadius: 10,
+            borderWidth: 4,
+            borderColor: '#63372C',
+            padding: 10,
+          }}
+        >
+          <Text style={{
+            color: '#000000ff',
+            fontFamily: 'Pixel',
+          }}>
+            Learn: Tap to read game rules
+          </Text>
+        </TouchableOpacity>
         <Text style={{
           margin: 7,
           flex: 1,
@@ -921,6 +1122,24 @@ export default function HomeScreen() {
         </Modal>
 
       </ScrollView>
+      {/* One-time learn hint overlay pointing to the Learn button */}
+      {showLearnHint && (
+        <Animated.View style={{
+          position: 'absolute',
+          right: 30,
+          top: 220,
+          zIndex: 999,
+          alignItems: 'center',
+          transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] }) }]
+        }}>
+          <Pressable onPress={async () => { await dismissLearnHint(); navigation.navigate('Learn'); }} style={{ padding: 8, backgroundColor: '#ffe3aaff', borderRadius: 8, borderWidth: 2, borderColor: '#63372C' }}>
+            <Text style={{ fontFamily: 'Pixel', fontSize: 18 }}>👇 Tap Learn</Text>
+          </Pressable>
+          <Pressable onPress={dismissLearnHint} style={{ marginTop: 8, padding: 6 }}>
+            <Text style={{ fontFamily: 'Pixel', fontSize: 12, color: '#333' }}>Got it</Text>
+          </Pressable>
+        </Animated.View>
+      )}
       
     </View>
   );

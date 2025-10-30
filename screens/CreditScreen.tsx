@@ -95,8 +95,10 @@ export default function CreditScreen() {
     if (!u) return Alert.alert('Not signed in');
     const userRef = doc(db, 'users', u.uid);
 
-    // 60% approval chance
-    const approved = Math.random() < 0.6;
+  // approval chance based on signed-in user's credit score normalized from 300..850 -> 0..1
+  const scoreVal = Number(user?.credit?.creditScore ?? user?.creditScore ?? 0) || 0;
+  const approvalChance = Math.max(0, Math.min(1, (scoreVal - 300) / 550));
+  const approved = Math.random() < approvalChance;
     if (!approved) {
       Alert.alert('Application result', 'Your credit card application was not approved.');
       return;

@@ -8,9 +8,9 @@ export default function LearnScreen() {
       <Text style={{ fontFamily: 'Windows', fontSize: 28, color: '#C97D60', marginBottom: 12 }}>Game rules & finances</Text>
 
       <Text style={{ fontFamily: 'Pixel', fontSize: 16, marginBottom: 8 }}>How you earn money</Text>
-      <Text style={{ fontFamily: 'Pixel', marginBottom: 6 }}>• Company job: $200 per minute</Text>
-      <Text style={{ fontFamily: 'Pixel', marginBottom: 6 }}>• Freelance job: $150 per minute</Text>
-      <Text style={{ fontFamily: 'Pixel', marginBottom: 6 }}>• Part-time job: $100 per minute</Text>
+      <Text style={{ fontFamily: 'Pixel', marginBottom: 6 }}>• Company job: $200 per minute ; 4-7 minutes</Text>
+      <Text style={{ fontFamily: 'Pixel', marginBottom: 6 }}>• Freelance job: $150 per minute ; 1-8 minutes</Text>
+      <Text style={{ fontFamily: 'Pixel', marginBottom: 6 }}>• Part-time job: $100 per minute ; 3-10 minutes</Text>
 
       <Text style={{ fontFamily: 'Pixel', fontSize: 16, marginTop: 12, marginBottom: 8 }}>Work rules (min / max)</Text>
       <Text style={{ fontFamily: 'Pixel', marginBottom: 6 }}>• Minimum to earn: you must record at least 1 minute of work for that job before a payout is made.</Text>
@@ -23,7 +23,8 @@ export default function LearnScreen() {
 
       <Text style={{ fontFamily: 'Pixel', fontSize: 16, marginTop: 12, marginBottom: 8 }}>Credit, cards & loans</Text>
       <Text style={{ fontFamily: 'Pixel', marginBottom: 6 }}>• Credit card bills appear every 15 days. You can pay them from Checking, Savings, or charge new purchases to Credit. Build your credit score by paying back as much as you can before the closing statement date</Text>
-      <Text style={{ fontFamily: 'Pixel', marginBottom: 6 }}>• Closing statement: 5 days before your credit card bill is due the app records a closing balance. You can pay early (the wallet opens up to 10 days before due).</Text>
+      <Text style={{ fontFamily: 'Pixel', marginBottom: 6 }}>•Build your credit score by paying back as much as you can before the closing statement date to decrease your credit utilization rate. Reduce the amount of loans you take out and make sure you pay them on time </Text>
+      <Text style={{ fontFamily: 'Pixel', marginBottom: 6 }}>• Closing statement: 5 days before your credit card bill is due the app records a closing balance. Try to pay as much as you can before closing statement date so reduce utilization rate which can increase you credit score(the wallet opens up to 10 days before due).</Text>
       <Text style={{ fontFamily: 'Pixel', marginBottom: 6 }}>• Loans: you may take out loans from the Loan screen. Loans create a loans.{'{id}'} entry and have a monthlyPayment amount (a "month" is 15 days in this game). Loan installments are due every 15 days.</Text>
       <Text style={{ fontFamily: 'Pixel', marginBottom: 6 }}>• If you don't have enough money to pay a bill you may take a loan to cover shortfalls, but loans must be repaid over time.</Text>
 
