@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
-import Animated, { useSharedValue } from 'react-native-reanimated';
+// no reanimated dependency required here
 
 // Game layout constants (rectangular board: fewer rows, more columns)
 const DEFAULT_ROWS = 12;
@@ -37,8 +37,8 @@ export default function SnakeGame() {
   const [elapsedMs, setElapsedMs] = useState<number>(0);
   const [swRunning, setSwRunning] = useState(false);
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
-  const startX = useSharedValue(0);
-  const startY = useSharedValue(0);
+  const startXRef = useRef<number>(0);
+  const startYRef = useRef<number>(0);
 
   // Responsive cell size calculation (keeps board fitting horizontally with control panel on right)
   const padding = 16;
@@ -90,13 +90,17 @@ export default function SnakeGame() {
     () =>
       Gesture.Pan()
         .onStart((e) => {
-          startX.value = e.x;
-          startY.value = e.y;
+          const evt: any = e;
+          startXRef.current = (evt.x ?? evt.absoluteX ?? (evt.nativeEvent && evt.nativeEvent.x)) || 0;
+          startYRef.current = (evt.y ?? evt.absoluteY ?? (evt.nativeEvent && evt.nativeEvent.y)) || 0;
         })
         .onEnd((e) => {
           if (gameOver || isPaused) return;
-          const deltaX = e.x - startX.value;
-          const deltaY = e.y - startY.value;
+          const evt: any = e;
+          const ex = (evt.x ?? evt.absoluteX ?? (evt.nativeEvent && evt.nativeEvent.x)) || 0;
+          const ey = (evt.y ?? evt.absoluteY ?? (evt.nativeEvent && evt.nativeEvent.y)) || 0;
+          const deltaX = ex - startXRef.current;
+          const deltaY = ey - startYRef.current;
           const threshold = 20;
           if (Math.abs(deltaX) > Math.abs(deltaY)) {
             if (Math.abs(deltaX) > threshold) {

@@ -1,15 +1,15 @@
 // screens/DinoScreen.tsx
 // screens/games/DinoGame.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import Stopwatch from '../lib/stopwatch';
 
 const GAME_WIDTH = 650;
 const GAME_HEIGHT = 280;
 const GROUND_HEIGHT = 210;
 const DINO_WIDTH = 44;
-const DINO_HEIGHT = 47;
-const JUMP_VELOCITY = -12;
+const DINO_HEIGHT = 80;
+const JUMP_VELOCITY = -45;
 const DUCK_HEIGHT = 30;
 const GRAVITY = 0.6;
 const INITIAL_SPEED = 6;
@@ -37,7 +37,6 @@ export default function DinoGame() {
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const scoreIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const nightModeScoreRef = useRef(0);
-  const dinoLeg = useRef(new Animated.Value(0)).current;
   const pterodactylWing = useRef(new Animated.Value(0)).current;
 
   // stopwatch subscription to show session time
@@ -58,27 +57,7 @@ export default function DinoGame() {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Dino running animation
-  useEffect(() => {
-    if (gameActive && !isJumping && !isDucking) {
-      const animation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(dinoLeg, {
-            toValue: 1,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.timing(dinoLeg, {
-            toValue: 0,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      animation.start();
-      return () => animation.stop();
-    }
-  }, [gameActive, isJumping, isDucking]);
+  // Dino running animation removed (legs hidden for mobile)
 
   // Pterodactyl wing animation
   useEffect(() => {
@@ -184,23 +163,24 @@ export default function DinoGame() {
     };
   }, [gameActive, gameOver]);
 
-  // Keyboard controls
+  // Keyboard controls (web only). On mobile (Expo Go) use touch handlers only.
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    if (Platform.OS !== 'web') return;
+
+    const handleKeyDown = (e: any) => {
       if (!gameActive) return;
-      
       if (e.code === 'Space' || e.code === 'ArrowUp') {
-        e.preventDefault();
+        e.preventDefault?.();
         handleJump();
       } else if (e.code === 'ArrowDown') {
-        e.preventDefault();
+        e.preventDefault?.();
         handleDuckStart();
       }
     };
 
-    const handleKeyUp = (e: KeyboardEvent) => {
+    const handleKeyUp = (e: any) => {
       if (e.code === 'ArrowDown') {
-        e.preventDefault();
+        e.preventDefault?.();
         handleDuckEnd();
       }
     };
@@ -379,40 +359,6 @@ export default function DinoGame() {
                   <View style={[styles.dinoMouth, { backgroundColor: nightMode ? '#000' : '#fff' }]} />
                 </View>
                 <View style={[styles.dinoTail, { backgroundColor: fgColor }]} />
-                <Animated.View
-                  style={[
-                    styles.dinoLeg,
-                    styles.dinoLegFront,
-                    { backgroundColor: fgColor },
-                    {
-                      transform: [
-                        {
-                          translateY: dinoLeg.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0, isJumping ? 0 : 3],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                />
-                <Animated.View
-                  style={[
-                    styles.dinoLeg,
-                    styles.dinoLegBack,
-                    { backgroundColor: fgColor },
-                    {
-                      transform: [
-                        {
-                          translateY: dinoLeg.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0, isJumping ? 0 : -3],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                />
                 <View style={[styles.dinoArm, { backgroundColor: fgColor }]} />
               </>
             ) : (
@@ -422,8 +368,6 @@ export default function DinoGame() {
                   <View style={[styles.dinoEye, { backgroundColor: nightMode ? '#000' : '#fff' }]} />
                 </View>
                 <View style={[styles.dinoDuckTail, { backgroundColor: fgColor }]} />
-                <View style={[styles.dinoDuckLeg, { backgroundColor: fgColor, left: 25 }]} />
-                <View style={[styles.dinoDuckLeg, { backgroundColor: fgColor, left: 35 }]} />
               </>
             )}
           </View>
@@ -460,24 +404,23 @@ export default function DinoGame() {
                   <View style={[styles.cactusArmLarge, styles.cactusArmRight, { backgroundColor: fgColor }]} />
                 </View>
               )}
-              {obstacle.type === 'cactusDouble' && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    left: obstacle.x,
-                    bottom: GAME_HEIGHT - GROUND_HEIGHT-300,
-                    flexDirection: 'row',
-                    gap: 5,
-                  }}
-                >
-                  <View style={[styles.cactusSmall, { backgroundColor: fgColor, position: 'relative', left: 0, bottom: 0 }]}>
-                    <View style={[styles.cactusArm, { backgroundColor: fgColor }]} />
-                  </View>
-                  <View style={[styles.cactusSmall, { backgroundColor: fgColor, position: 'relative', left: 0, bottom: 0 }]}>
-                    <View style={[styles.cactusArm, { backgroundColor: fgColor }]} />
-                  </View>
-                </View>
-              )}
+                  {obstacle.type === 'cactusDouble' && (
+                    <View
+                      style={{
+                        position: 'absolute',
+                        left: obstacle.x,
+                        bottom: GAME_HEIGHT - GROUND_HEIGHT-300,
+                        flexDirection: 'row',
+                      }}
+                    >
+                      <View style={[styles.cactusSmall, { backgroundColor: fgColor, position: 'relative', left: 0, bottom: 0, marginRight: 5 }]}>
+                        <View style={[styles.cactusArm, { backgroundColor: fgColor }]} />
+                      </View>
+                      <View style={[styles.cactusSmall, { backgroundColor: fgColor, position: 'relative', left: 0, bottom: 0 }]}>
+                        <View style={[styles.cactusArm, { backgroundColor: fgColor }]} />
+                      </View>
+                    </View>
+                  )}
               {obstacle.type === 'pterodactyl' && (
                 <View
                   style={[
@@ -623,7 +566,6 @@ const styles = StyleSheet.create({
     top: 10,
     right: 15,
     flexDirection: 'row',
-    gap: 8,
     zIndex: 10,
   },
   scoreLabel: {
@@ -635,6 +577,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'monospace',
     fontWeight: 'bold',
+    marginLeft: 8,
   },
   dino: {
     position: 'absolute',
@@ -670,18 +613,7 @@ const styles = StyleSheet.create({
     top: 8,
     left: 0,
   },
-  dinoLeg: {
-    width: 6,
-    height: 15,
-    position: 'absolute',
-    bottom: 0,
-  },
-  dinoLegFront: {
-    right: 5,
-  },
-  dinoLegBack: {
-    right: 15,
-  },
+  /* legs removed */
   dinoArm: {
     width: 6,
     height: 12,
@@ -703,12 +635,7 @@ const styles = StyleSheet.create({
     top: 5,
     left: -10,
   },
-  dinoDuckLeg: {
-    width: 6,
-    height: 12,
-    position: 'absolute',
-    bottom: 0,
-  },
+  /* duck legs removed */
   cactusSmall: {
     position: 'absolute',
     width: 17,
