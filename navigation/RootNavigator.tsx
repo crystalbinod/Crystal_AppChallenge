@@ -6,7 +6,7 @@ import LoginScreen from '../screens/LoginScreen';
 import ShopScreen from '../screens/ShopScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import JobScreen from '../screens/JobScreen';
-import FinancialSimScreen from '../screens/FinancialSimScreen';
+
 import BankScreen from '../screens/BankScreen';
 import LearnScreen from '../screens/LearnScreen';
 import snakegame from '../screens/snakegame';
@@ -23,6 +23,7 @@ import JobGeneratorScreen from '../screens/JobGeneratorScreen';
 import PartTimeScreen from '../screens/PartTimeScreen';
 import CompanyScreen from '../screens/CompanyScreen';
 import FreelanceScreen from '../screens/FreelanceScreen';
+import RemindersScreen from '../screens/RemindersScreen';
 import TabsNavigator from './tabs/TabsNavigator';
 
 
@@ -37,7 +38,7 @@ export type RootStackParamList = {
   Login: undefined;
   Shop: undefined;
   Job: undefined;
-  FinancialSim: undefined;
+  
   Bank: undefined;
   Learn: undefined;
   MineSweeper:  undefined;
@@ -47,9 +48,10 @@ export type RootStackParamList = {
   Memory:undefined;
   Pong:undefined;
   CupPong:undefined;
-  mole:undefined;
+  WhackAMole:undefined;
   FlappyBird:undefined;
   Dino:undefined;
+  Reminders: undefined;
   JobGenerator:undefined;
   PartTime:undefined;
   Company:undefined;
@@ -93,10 +95,11 @@ export default function RootNavigator() {
         Useful for showing extra details (e.g., user info, post details, etc.)
       */}
       <Stack.Screen name="Profile" component={ProfileScreen} />
+  <Stack.Screen name="Reminders" component={RemindersScreen} />
       <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false}}/>
       <Stack.Screen name="Shop" component={ShopScreen} />
       <Stack.Screen name="Job" component={JobScreen} />
-      <Stack.Screen name="FinancialSim" component={FinancialSimScreen} />
+      
       <Stack.Screen name="Bank" component={BankScreen} />
       <Stack.Screen name="Learn" component={LearnScreen} />
       <Stack.Screen name="MineSweeper" component={MineSweeperScreen} />

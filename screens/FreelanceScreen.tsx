@@ -1,6 +1,6 @@
 // screens/ParttimeScreen.tsx
 // screens/JobScreen.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,6 +8,7 @@ import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useFonts } from 'expo-font';
 import { auth, db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import FreelanceStopwatch from '../lib/stopwatch_freelance';
 
 export default function JobScreen() {
   const [fontsLoaded] = useFonts({
@@ -18,6 +19,34 @@ export default function JobScreen() {
   });
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  // show freelance stopwatch session time (mm:ss)
+  const [fwMs, setFwMs] = useState<number>(0);
+  const [fwRunning, setFwRunning] = useState<boolean>(false);
+
+  useEffect(() => {
+    const unsub = FreelanceStopwatch.subscribe((ms: number, running: boolean) => {
+      setFwMs(ms);
+      setFwRunning(Boolean(running));
+    });
+    return unsub;
+  }, []);
+
+  const formatMs = (ms: number) => {
+    const totalSec = Math.floor((ms || 0) / 1000);
+    const minutes = Math.floor(totalSec / 60);
+    const seconds = totalSec % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  // When this screen regains focus (user returned from a freelance game), pause the freelance stopwatch
+  useEffect(() => {
+    const unsub = navigation.addListener('focus', () => {
+      // pause the freelance stopwatch when returning to the freelance parent screen
+      try { FreelanceStopwatch.pause(); } catch (e) { /* noop */ }
+    });
+    return unsub;
+  }, [navigation]);
 
   return (
     <View style={{ 
@@ -36,9 +65,19 @@ export default function JobScreen() {
         Pick a Job
       </Text>
 
+      {/* Freelance session timer */}
+      <Text style={{
+        fontSize: 20,
+        fontFamily: 'Pixel',
+        color: '#63372C',
+        marginBottom: 20,
+      }}>
+        Session: {formatMs(fwMs)} {fwRunning ? '(running)' : ''}
+      </Text>
+
       {/* Part-Time Button */}
             <TouchableOpacity
-              onPress= {() => navigation.navigate('snakegame')}
+              onPress= {() => { FreelanceStopwatch.start(); (navigation as any).navigate('snakegame'); }}
               activeOpacity={0.7}
             >
               <Image 
@@ -57,7 +96,7 @@ export default function JobScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress= {() => navigation.navigate('Cup-Pong')}
+              onPress= {() => { FreelanceStopwatch.start(); (navigation as any).navigate('Cup-Pong'); }}
               activeOpacity={0.7}
             >
               <Image 
@@ -76,7 +115,7 @@ export default function JobScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress= {() => navigation.navigate('FlappyBird')}
+              onPress= {() => { FreelanceStopwatch.start(); (navigation as any).navigate('FlappyBird'); }}
               activeOpacity={0.7}
             >
               <Image 

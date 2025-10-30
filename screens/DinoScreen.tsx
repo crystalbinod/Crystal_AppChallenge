@@ -2,6 +2,7 @@
 // screens/games/DinoGame.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import Stopwatch from '../lib/stopwatch';
 
 const GAME_WIDTH = 650;
 const GAME_HEIGHT = 280;
@@ -33,11 +34,29 @@ export default function DinoGame() {
   const [gameSpeed, setGameSpeed] = useState(INITIAL_SPEED);
   const [nightMode, setNightMode] = useState(false);
   const obstacleIdCounter = useRef(0);
-  const gameLoopRef = useRef<NodeJS.Timeout>();
-  const scoreIntervalRef = useRef<NodeJS.Timeout>();
+  const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
+  const scoreIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const nightModeScoreRef = useRef(0);
   const dinoLeg = useRef(new Animated.Value(0)).current;
   const pterodactylWing = useRef(new Animated.Value(0)).current;
+
+  // stopwatch subscription to show session time
+  const [elapsedMs, setElapsedMs] = useState<number>(0);
+  const [swRunning, setSwRunning] = useState(false);
+  useEffect(() => {
+    const unsub = Stopwatch.subscribe((ms, isRunning) => {
+      setElapsedMs(ms);
+      setSwRunning(isRunning);
+    });
+    return unsub;
+  }, []);
+
+  const formatTime = (ms: number) => {
+    const totalSec = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSec / 60);
+    const seconds = totalSec % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   // Dino running animation
   useEffect(() => {
@@ -337,6 +356,10 @@ export default function DinoGame() {
             <Text style={[styles.scoreLabel, { color: fgColor }]}>HI</Text>
             <Text style={[styles.scoreValue, { color: fgColor }]}>{String(highScore).padStart(5, '0')}</Text>
             <Text style={[styles.scoreValue, { color: fgColor }]}>{String(displayScore).padStart(5, '0')}</Text>
+            <View style={{ position: 'absolute', right: 8, top: 6, alignItems: 'center' }}>
+              <Text style={[styles.scoreLabel, { color: fgColor, fontSize: 10 }]}>Session</Text>
+              <Text style={[styles.scoreValue, { color: fgColor, fontSize: 14 }]}>{formatTime(elapsedMs)} {swRunning ? '' : '(paused)'}</Text>
+            </View>
           </View>
 
           {/* Dino */}

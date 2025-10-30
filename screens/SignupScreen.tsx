@@ -53,8 +53,13 @@ export default function SignupScreen() {
         job: null,
         food:0,
         utilities:0,
-        credit:null,
-        creditCardBill:0,
+        credit:{
+            creditCardbill:0,
+            creditCards: {
+                creditcard1:100,
+               },
+            creditLimit:100, 
+            creditScore:null},
         password: password,
         housing:"rent",
         lifeStatus:1,
@@ -62,10 +67,20 @@ export default function SignupScreen() {
         emergencyAlerts:null,
         reminders:null,
         day:1,
-        checkingAccount:100,
-        creditcardLimit:100,
-        jobDone:0
+        // financial maps
+          // financial maps (nested under liquidMoney)
+        liquidMoney: {
+            checkingAccount: { checking_account1: 0 },
+            savingsAccount: { savings_account1: 0 },
+            total:100, 
+          },
 
+        
+        jobDone:"",
+        hoursWorked:0,
+        loans:{
+            
+        }
       });
 
       // Send verification email (optional)
@@ -147,13 +162,13 @@ export default function SignupScreen() {
       backgroundColor: '#F2E5D7',
     }}>
       <Text style={{
-        fontSize: 80,
+        fontSize: 50,
         color: '#C97D60',
         fontFamily: 'Windows',
         marginBottom: 0,
-        marginTop: 10,
+        marginTop: 80,
       }}>
-        title.
+        piggybank.
       </Text>
 
       {showGif ? (

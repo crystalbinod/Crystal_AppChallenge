@@ -13,7 +13,7 @@ import { useFonts } from 'expo-font';
 import BankScreen from '../../screens/BankScreen';
 import CheckingScreen from '../../screens/CheckingScreen';
 import SavingsScreen from '../../screens/SavingsScreen';
-import InvestmentScreen from '../../screens/InvestmentScreen';
+import LoanScreen from '../../screens/LoanScreen';
 
 
 // Define the types for your drawer routes and their parameters
@@ -25,6 +25,8 @@ export type DrawerParamList = {
   Checking:undefined
   Investment:undefined;
   Savings:undefined;
+  Credit: undefined;
+  Loan: undefined;
 };
 
 
@@ -54,14 +56,27 @@ export default function DrawerNavigator() {
           fontSize: 12, // Font size of tab labels
           fontFamily:'Pixel',
         },
-      }}
+        headerStyle: {
+          height: 40,
+          backgroundColor: '#eec5c5ff',
+          borderBottomRightRadius:10,
+          borderBottomLeftRadius:10,
+            
+          },
+      headerTitleStyle: {
+          fontFamily: 'Windows', // must match the key you used in useFonts
+          fontSize: 20,
+          color: "#63372C"
+         },
+    }}
      initialRouteName='Bank'>
       {/* First drawer item — the Tabs navigator (contains bottom tabs) */}
       
       {/* Second drawer item — opens the Settings screen */}
       <Drawer.Screen name="Bank" component={BankScreen}  />
       <Drawer.Screen name="Checking" component={CheckingScreen} />
-      <Drawer.Screen name="Investment" component={InvestmentScreen}  />
+  <Drawer.Screen name="Credit" component={require('../../screens/CreditScreen').default} />
+      <Drawer.Screen name="Loan" component={LoanScreen}  />
       <Drawer.Screen name="Savings" component={SavingsScreen} />
     </Drawer.Navigator>
   );

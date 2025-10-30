@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView } from 'react-native';
 
-export default function Job1Screen() {
+export default function MineSweeperScreen() {
   // rectangle dimensions (rows x cols)
   const GRID_ROWS = 6;
   const GRID_COLS = 12;
@@ -109,6 +109,24 @@ export default function Job1Screen() {
     setWon(false);
   };
 
+  // Part-time stopwatch subscription (show session time in control panel)
+  const [elapsedMs, setElapsedMs] = React.useState<number>(0);
+  const [swRunning, setSwRunning] = React.useState(false);
+  React.useEffect(() => {
+    let unsub: (() => void) | null = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const sw = require('../lib/stopwatch_parttime').default;
+      unsub = sw.subscribe((ms: number, running: boolean) => {
+        setElapsedMs(ms);
+        setSwRunning(running);
+      });
+    } catch (e) {
+      // ignore
+    }
+    return () => { if (unsub) unsub(); };
+  }, []);
+
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F2E5D7', padding: 20 }}>
       <Text style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 16, color: '#C97D60' }}>Minesweeper</Text>
@@ -168,6 +186,13 @@ export default function Job1Screen() {
           >
             <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 14 }}>New Game</Text>
           </TouchableOpacity>
+          <View style={{ height: 8 }} />
+          <Text style={{ fontSize: 12, color: '#6b7280' }}>Session: {(() => {
+            const totalSec = Math.floor(elapsedMs / 1000);
+            const minutes = Math.floor(totalSec / 60);
+            const seconds = totalSec % 60;
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          })()} {swRunning ? '' : '(paused)'}</Text>
         </View>
       </View>
     </View>

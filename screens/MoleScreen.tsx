@@ -26,6 +26,9 @@ export default function WhackAMoleGame() {
   const [highScore, setHighScore] = useState(0);
   const moleIntervalRef = useRef<NodeJS.Timeout>();
   const timerRef = useRef<NodeJS.Timeout>();
+  // Part-time stopwatch subscription
+  const [elapsedMs, setElapsedMs] = useState<number>(0);
+  const [swRunning, setSwRunning] = useState(false);
 
   // Start game
   const startGame = () => {
@@ -105,6 +108,21 @@ export default function WhackAMoleGame() {
     };
   }, [gameActive, score, highScore]);
 
+  useEffect(() => {
+    let unsub: (() => void) | null = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const sw = require('../lib/stopwatch_parttime').default;
+      unsub = sw.subscribe((ms: number, running: boolean) => {
+        setElapsedMs(ms);
+        setSwRunning(running);
+      });
+    } catch (e) {
+      // ignore
+    }
+    return () => { if (unsub) unsub(); };
+  }, []);
+
   const handleMoleClick = (index: number) => {
     if (!gameActive) return;
 
@@ -145,6 +163,15 @@ export default function WhackAMoleGame() {
           <View style={styles.statBox}>
             <Text style={styles.statLabel}>Best</Text>
             <Text style={styles.statValue}>{highScore}</Text>
+          </View>
+          <View style={[styles.statBox, { alignItems: 'center' }]}>
+            <Text style={styles.statLabel}>Session</Text>
+            <Text style={[styles.statValue, { fontSize: 12 }]}>{(() => {
+              const totalSec = Math.floor(elapsedMs / 1000);
+              const minutes = Math.floor(totalSec / 60);
+              const seconds = totalSec % 60;
+              return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            })()} {swRunning ? '' : '(paused)'}</Text>
           </View>
         </View>
       </View>

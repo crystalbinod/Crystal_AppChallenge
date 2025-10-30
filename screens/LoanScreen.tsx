@@ -96,7 +96,11 @@ export default function LoanScreen() {
   updates[`loans.${loanId}.termMonths`] = months;
   updates[`loans.${loanId}.monthlyPayment`] = monthlyPayment;
 
-        // add funds to liquidMoney.total and first checking account if present
+  // compute total owed (sum of monthly payments over the term) — treat monthlyPayment as per-period
+  const totalOwed = Math.round(monthlyPayment * months * 100) / 100;
+  updates[`loans.${loanId}.remaining`] = totalOwed;
+
+    // add funds to liquidMoney.total and first checking account if present
         const liquid = data.liquidMoney ?? {};
         const prevTotal = Number(liquid.total) || 0;
         updates['liquidMoney.total'] = prevTotal + amt;

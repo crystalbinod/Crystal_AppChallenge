@@ -150,6 +150,31 @@ export default function CupPongGame() {
     setThrowingBall(null);
   };
 
+  // Freelance stopwatch subscription
+  const [elapsedMs, setElapsedMs] = useState<number>(0);
+  const [swRunning, setSwRunning] = useState(false);
+  useEffect(() => {
+    let unsub: (() => void) | null = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const sw = require('../lib/stopwatch_freelance').default;
+      unsub = sw.subscribe((ms: number, running: boolean) => {
+        setElapsedMs(ms);
+        setSwRunning(running);
+      });
+    } catch (e) {
+      // ignore
+    }
+    return () => { if (unsub) unsub(); };
+  }, []);
+
+  const formatTime = (ms: number) => {
+    const totalSec = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSec / 60);
+    const seconds = totalSec % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   const activeCups = cups.filter((cup) => !cup.hit);
   const allCupsHit = cups.every((cup) => cup.hit);
 
@@ -166,6 +191,7 @@ export default function CupPongGame() {
             <View style={styles.stats}>
               <Text style={styles.statText}>Score: {score}</Text>
               <Text style={styles.statText}>Balls: {balls}</Text>
+              <Text style={[styles.statText, { fontSize: 12, marginTop: 4 }]}>Session: {formatTime(elapsedMs)} {swRunning ? '' : '(paused)'}</Text>
             </View>
           </View>
 

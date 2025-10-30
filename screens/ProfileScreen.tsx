@@ -8,7 +8,6 @@ import { auth, db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useWindowDimensions } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
 
@@ -121,12 +120,12 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
     input: {
-      height: 23,
+      height: 30,
       minWidth:230,
       paddingHorizontal: 5,
       marginHorizontal: 8,
       borderWidth: 2,
-      fontSize:12,
+      fontSize:15,
       fontFamily:'Pixel',
       backgroundColor:'#C97D60',
       color:'#080808ff',
@@ -143,7 +142,21 @@ const styles = StyleSheet.create({
       fontFamily:'Pixel',
       color:'#C97D60',
       marginBottom:7,
+      
     }
+      ,
+  value: {
+            backgroundColor: '#C97D60',
+            backgroundRadius:10,
+            color: '#080808ff',
+            marginTop:20, 
+            
+            
+            fontFamily:'Pixel', 
+            alignSelf:'center',
+            fontSize:15,
+            
+  }
     
     });
 
@@ -210,8 +223,8 @@ const styles = StyleSheet.create({
 
                                <Text style={styles.text}>username: 
                                 
-                                <Text style={styles.input}>
-                                {userData.username}</Text>
+                                  <Text style={styles.value}>
+                                  {userData.username}</Text>
                                   
                               </Text>
 
@@ -253,13 +266,13 @@ const styles = StyleSheet.create({
 
                               <Text style={styles.text}>job: 
                                 
-                                <Text style={styles.input}>
+                                <Text style={styles.value}>
                                 {userData.job}</Text>
                                   
                               </Text>
                               <Text style={styles.text}>housing: 
                                 
-                                <Text style={styles.input}>
+                                <Text style={styles.value}>
                                 {userData.housing}</Text>
                                   
                               </Text>
@@ -286,7 +299,7 @@ const styles = StyleSheet.create({
                             backgroundColor:'#63372C',
                             borderRadius:15,
                             
-                            height: 200,
+                            height: 300,
                             
                             
                             
@@ -305,33 +318,33 @@ const styles = StyleSheet.create({
                               </Text>
                               <Text style={styles.text}>food: 
                                 
-                                <Text style={styles.input}>
+                                <Text style={styles.value}>
                                 {userData.food}</Text>
                                   
                               </Text>
                               <Text style={styles.text}>utilities: 
                                 
-                                <Text style={styles.input}>
+                                <Text style={styles.value}>
                                 {userData.utilities}</Text>
                                   
                               </Text>
                               <Text style={styles.text}>credit score: 
                                 
-                                <Text style={styles.input}>
-                                {userData.credit}</Text>
+                                <Text style={styles.value}>
+                                {userData?.credit?.creditScore ?? userData?.creditScore ?? '—'}</Text>
                                   
                               </Text>
                               <Text style={styles.text}>credit bill: 
                                 
-                                <Text style={styles.input}>
-                                {userData.creditCardBill}</Text>
+                                <Text style={styles.value}>
+                                {userData?.credit?.creditCardbill ?? userData?.credit?.creditCardBill ?? userData?.creditCardBill ?? '—'}</Text>
                                   
                               </Text>
 
                               <Text style={styles.text}>credit limit: 
                                 
-                                <Text style={styles.input}>
-                                {userData.creditCardLimit}</Text>
+                                <Text style={styles.value}>
+                                {userData?.credit?.creditLimit ?? userData?.creditCardLimit ?? '—'}</Text>
                                   
                               </Text>
                           </View>

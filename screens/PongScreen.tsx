@@ -36,6 +36,9 @@ export default function PongScreen() {
   const [scoreTop, setScoreTop] = useState(0);
   const [scoreBottom, setScoreBottom] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Part-time stopwatch subscription
+  const [elapsedMs, setElapsedMs] = useState<number>(0);
+  const [swRunning, setSwRunning] = useState(false);
   // no AI or practice modes — top is full red bar, bottom is player-controlled green bar
 
   const loopRef = useRef<NodeJS.Timeout | null>(null);
@@ -44,6 +47,28 @@ export default function PongScreen() {
     resetPositions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playWidth, playHeight]);
+
+  useEffect(() => {
+    let unsub: (() => void) | null = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const sw = require('../lib/stopwatch_parttime').default;
+      unsub = sw.subscribe((ms: number, running: boolean) => {
+        setElapsedMs(ms);
+        setSwRunning(running);
+      });
+    } catch (e) {
+      // ignore
+    }
+    return () => { if (unsub) unsub(); };
+  }, []);
+
+  const formatTime = (ms: number) => {
+    const totalSec = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSec / 60);
+    const seconds = totalSec % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   function resetPositions() {
     setBottomX(playWidth / 2 - paddleLength / 2);
@@ -216,6 +241,10 @@ export default function PongScreen() {
             <View style={styles.scoreBox}>
               <Text style={styles.scoreLabel}>Bottom</Text>
               <Text style={styles.scoreValue}>{scoreBottom}</Text>
+            </View>
+
+            <View style={{ width: '100%', alignItems: 'center', marginTop: 6 }}>
+              <Text style={{ fontSize: 12, color: '#6b7280' }}>Session: {formatTime(elapsedMs)} {swRunning ? '' : '(paused)'}</Text>
             </View>
 
             <View style={{ height: 8 }} />

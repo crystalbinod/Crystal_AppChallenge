@@ -46,6 +46,9 @@ export default function MemoryScreen() {
   const [busy, setBusy] = useState(false);
   const [moves, setMoves] = useState(0);
   const [matches, setMatches] = useState(0);
+  // Part-time stopwatch subscription
+  const [elapsedMs, setElapsedMs] = useState<number>(0);
+  const [swRunning, setSwRunning] = useState(false);
   const [bestMoves, setBestMoves] = useState<number | null>(null);
 
   const padding = 16;
@@ -60,6 +63,21 @@ export default function MemoryScreen() {
     // reset on mount
     resetGame();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let unsub: (() => void) | null = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const sw = require('../lib/stopwatch_parttime').default;
+      unsub = sw.subscribe((ms: number, running: boolean) => {
+        setElapsedMs(ms);
+        setSwRunning(running);
+      });
+    } catch (e) {
+      // ignore
+    }
+    return () => { if (unsub) unsub(); };
   }, []);
 
   const resetGame = () => {
@@ -169,6 +187,14 @@ export default function MemoryScreen() {
           <TouchableOpacity style={styles.button} onPress={resetGame}>
             <Text style={styles.buttonText}>New Game</Text>
           </TouchableOpacity>
+
+          <View style={{ height: 8 }} />
+          <Text style={{ fontSize: 12, color: '#6b7280' }}>Session: {(() => {
+            const totalSec = Math.floor(elapsedMs / 1000);
+            const minutes = Math.floor(totalSec / 60);
+            const seconds = totalSec % 60;
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          })()} {swRunning ? '' : '(paused)'}</Text>
 
           <View style={{ height: 12 }} />
           <Text style={styles.hint}>Tap tiles to reveal and match pairs.</Text>

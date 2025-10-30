@@ -24,7 +24,7 @@ const [pressed3, setPressed3] = useState(false);
   const handleJobSelection = async (job: string, chance: number, setPressed: React.Dispatch<React.SetStateAction<boolean>>) => {
     
     const random = Math.random();
-    if (random <= chance && setPressed(false)) {
+    if (random <= chance) {
       try {
         const user = auth.currentUser;
         if (!user ) {
@@ -68,7 +68,7 @@ const [pressed3, setPressed3] = useState(false);
 
       {/* Freelance Button */}
       <TouchableOpacity
-        onPress={() => handleJobSelection('Freelance', 0.2, setPressed1)}
+        onPress={() => handleJobSelection('Freelance', 0.4, setPressed1)}
         activeOpacity={0.7}
         disabled={pressed1}
       >
@@ -90,7 +90,7 @@ const [pressed3, setPressed3] = useState(false);
 
       {/* Company Button */}
       <TouchableOpacity
-        onPress={() => handleJobSelection('Company', 0.6, setPressed2)}
+        onPress={() => handleJobSelection('Company', 0.2, setPressed2)}
         disabled={pressed2}
         activeOpacity={0.7}
       >

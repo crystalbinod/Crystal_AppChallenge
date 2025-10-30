@@ -1,5 +1,5 @@
 # Starter Template with React Navigation
-
+# checking a checking account where I can create new checking accounts and edit  name and be able to 
 This is a minimal starter template for React Native apps using Expo and React Navigation.
 
 It includes the following:

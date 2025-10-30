@@ -31,6 +31,31 @@ export default function FlappyBirdGame() {
   const pipeIdCounter = useRef(0);
   const birdRotation = useRef(new Animated.Value(0)).current;
 
+  // Freelance stopwatch subscription (show session time in this game)
+  const [elapsedMs, setElapsedMs] = useState<number>(0);
+  const [swRunning, setSwRunning] = useState(false);
+  useEffect(() => {
+    let unsub: (() => void) | null = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const sw = require('../lib/stopwatch_freelance').default;
+      unsub = sw.subscribe((ms: number, running: boolean) => {
+        setElapsedMs(ms);
+        setSwRunning(running);
+      });
+    } catch (e) {
+      // ignore
+    }
+    return () => { if (unsub) unsub(); };
+  }, []);
+
+  const formatTime = (ms: number) => {
+    const totalSec = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSec / 60);
+    const seconds = totalSec % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   // Bird rotation animation based on velocity
   useEffect(() => {
     Animated.timing(birdRotation, {
@@ -172,6 +197,7 @@ export default function FlappyBirdGame() {
           {/* Score */}
           <View style={styles.scoreContainer}>
             <Text style={styles.score}>{score}</Text>
+            <Text style={{ color: '#fff', fontSize: 12, marginTop: 4 }}>Session: {formatTime(elapsedMs)} {swRunning ? '' : '(paused)'}</Text>
           </View>
 
           {/* Bird */}

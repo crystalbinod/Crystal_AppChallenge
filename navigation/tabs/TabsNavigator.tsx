@@ -5,7 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 // Import the screens that will be shown in each tab
 import HomeScreen from '../../screens/HomeScreen';
 import ShopScreen from '../../screens/ShopScreen';
-import FinicialSimScreen from '../../screens/FinancialSimScreen';
+
 import BankScreen from '../../screens/BankScreen';
 import LearnScreen from '../../screens/LearnScreen';
 import DrawerNavigator from '../drawer/DrawerNavigator';
@@ -17,7 +17,7 @@ import { useFonts } from 'expo-font';
 export type TabsParamList = {
   Home: undefined;
   Shop: undefined;
-  FinicialSim:undefined;
+
   Bank:undefined;
   Learn:undefined;
 };
@@ -46,12 +46,12 @@ export default function TabsNavigator() {
         tabBarStyle: {
           borderRadius:10, 
           backgroundColor: '#c78e71ff', // Background color of the tab bar
-          height: 40, // Height of the tab bar
+          height: 60, // Height of the tab bar
            // Padding at the bottom
         },
         
         tabBarLabelStyle: { 
-          fontSize: 12, // Font size of tab labels
+          fontSize: 15, // Font size of tab labels
           fontFamily:'Pixel',
         },
       }}
@@ -60,7 +60,7 @@ export default function TabsNavigator() {
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }}/>
       {/* Second tab — shows the Shop screen */}
       <Tab.Screen name="Shop" component={ShopScreen} options={{ headerShown: false}} />
-      <Tab.Screen name="FinicialSim" component={FinicialSimScreen} options={{ headerShown: false}}/>
+      
       <Tab.Screen name="Bank" component={DrawerNavigator} options={{ headerShown: false}}/>
       <Tab.Screen name="Learn" component={LearnScreen} options={{ headerShown: false}}/>
     </Tab.Navigator>

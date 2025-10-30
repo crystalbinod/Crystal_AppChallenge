@@ -153,13 +153,13 @@ export default function LoginScreen() {
       backgroundColor: '#F2E5D7',
     }}>
       <Text style={{
-        fontSize: 80,
+        fontSize: 50,
         color: '#C97D60',
         fontFamily: 'Windows',
         marginBottom: 0,
-        marginTop: 10,
+        marginTop: 90,
       }}>
-        title.
+        piggybank.
       </Text>
 
       {showGif ? (
@@ -238,6 +238,7 @@ export default function LoginScreen() {
           fontSize: 10,
           fontWeight: 'bold',
           fontFamily: 'Pixel',
+          marginTop:20,
           textAlign: 'center',
         }}>
           signup

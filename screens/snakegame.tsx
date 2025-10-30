@@ -33,6 +33,9 @@ export default function SnakeGame() {
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  // Freelance stopwatch subscription (separate from Company stopwatch)
+  const [elapsedMs, setElapsedMs] = useState<number>(0);
+  const [swRunning, setSwRunning] = useState(false);
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
@@ -158,6 +161,23 @@ export default function SnakeGame() {
     };
   }, [nextDirection, gameOver, isPaused, food]);
 
+  // Subscribe to the freelance stopwatch so the player sees session time
+  useEffect(() => {
+    // dynamic require to avoid any build-time circular issues
+    let unsub: (() => void) | null = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const sw = require('../lib/stopwatch_freelance').default;
+      unsub = sw.subscribe((ms: number, running: boolean) => {
+        setElapsedMs(ms);
+        setSwRunning(running);
+      });
+    } catch (e) {
+      // ignore if module load fails
+    }
+    return () => { if (unsub) unsub(); };
+  }, []);
+
   const handleDirectionChange = (newDir: Direction) => {
     // ignore reverse
     if (direction[0] === -newDir[0] && direction[1] === -newDir[1]) return;
@@ -172,6 +192,13 @@ export default function SnakeGame() {
     setGameOver(false);
     setScore(0);
     setIsPaused(false);
+  };
+
+  const formatTime = (ms: number) => {
+    const totalSec = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSec / 60);
+    const seconds = totalSec % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   // Render board cells using absolute positions for consistent sizing
@@ -207,7 +234,7 @@ export default function SnakeGame() {
 
 
 
-  
+
   return (
     <GestureHandlerRootView style={styles.container}>
       <GestureDetector gesture={gesture}>
@@ -233,6 +260,7 @@ export default function SnakeGame() {
           <View style={styles.controlsPanel}>
             <Text style={styles.score}>Score</Text>
             <Text style={styles.bigScore}>{score}</Text>
+            <Text style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>Session: {formatTime(elapsedMs)} {swRunning ? '' : '(paused)'}</Text>
 
             <View style={styles.controlsRow}>
               <Button title={isPaused ? 'Resume' : 'Pause'} onPress={() => setIsPaused(!isPaused)} />
