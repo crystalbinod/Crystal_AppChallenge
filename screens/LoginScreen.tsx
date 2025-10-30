@@ -159,7 +159,7 @@ export default function LoginScreen() {
         marginBottom: 0,
         marginTop: 90,
       }}>
-        piggybank.
+        pocketpiggy.
       </Text>
 
       {showGif ? (

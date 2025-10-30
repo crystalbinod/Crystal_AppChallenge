@@ -168,7 +168,7 @@ export default function SignupScreen() {
         marginBottom: 0,
         marginTop: 80,
       }}>
-        piggybank.
+        pocketpiggy.
       </Text>
 
       {showGif ? (

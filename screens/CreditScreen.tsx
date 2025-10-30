@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { auth, db } from '../lib/firebase';
-import { doc, getDoc, runTransaction, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, runTransaction, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 function makeId() {
   return 'card_' + Date.now();
@@ -47,6 +47,47 @@ export default function CreditScreen() {
   const canApply = () => {
     const day = Number(user?.day) || 0;
     return day > 0 && (day % 15) === 0;
+  };
+
+  const computeCreditScore = (d: any) => {
+    const credit = d?.credit ?? {};
+    const paymentHistory = Array.isArray(credit.paymentHistory) ? credit.paymentHistory : [];
+    const creditLimit = Number(credit.creditLimit) || 0;
+    const lastClosingBalance = (credit.lastClosingBalance != null) ? Number(credit.lastClosingBalance) : null;
+    const currentBalance = Number(credit.creditCardbill || credit.creditCardBill || 0) || 0;
+    const balanceForUtil = (lastClosingBalance != null ? lastClosingBalance : currentBalance);
+    const utilization = (creditLimit > 0) ? (balanceForUtil / creditLimit) : 0;
+    const utilizationNorm = 1 - Math.min(1, utilization);
+    const paymentsCount = paymentHistory.filter((p: any) => p && (p.type === 'credit' || p.type === 'creditCharge' || p.type === 'loan')).length;
+    const expectedPayments = Math.max(1, Math.floor((Number(d?.day) || 0) / 15));
+    const paymentRatio = Math.min(1, paymentsCount / expectedPayments);
+    const loansMap = d?.loans ?? {};
+    let totalLoan = 0;
+    try {
+      Object.values(loansMap).forEach((L: any) => { totalLoan += Number(L?.amount || L?.remaining || 0) || 0; });
+    } catch (e) { /* noop */ }
+    const loanFactor = 1 - Math.min(1, totalLoan / 10000); // assumes 10k is high burden
+    const lengthYears = (Number(d?.day) || 0) / 365;
+    const lengthNorm = Math.min(1, lengthYears / 5); // 5 years cap
+    const combined = (paymentRatio * 0.35) + (utilizationNorm * 0.25) + (loanFactor * 0.2) + (lengthNorm * 0.2);
+    const score = Math.round(300 + combined * 550);
+    return Math.max(300, Math.min(850, score));
+  };
+
+  const recalcAndSave = async () => {
+    try {
+      const score = computeCreditScore(user || {});
+      Alert.alert('Credit score', `Computed score: ${score}`);
+      const u = auth.currentUser;
+      if (!u) return;
+      const userRef = doc(db, 'users', u.uid);
+      await updateDoc(userRef, { ['credit.creditScore']: score, ['credit.creditScoreUpdatedAt']: serverTimestamp() });
+      // update local snapshot state so UI reflects immediately
+  setUser((prev: any) => ({ ...prev, credit: { ...(prev?.credit || {}), creditScore: score } }));
+    } catch (e: any) {
+      console.error('recalcAndSave error', e);
+      Alert.alert('Error', e?.message || String(e));
+    }
   };
 
   const applyForCard = async () => {
@@ -95,11 +136,12 @@ export default function CreditScreen() {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
       <View style={styles.card}>
         <Text style={styles.title}>Credit</Text>
-        <Text style={styles.label}>Job: {user.job || '—'}</Text>
-        <Text style={styles.label}>Day: {user.day ?? '—'}</Text>
+    <Text style={styles.label}>Job: {user.job || '—'}</Text>
+    <Text style={styles.label}>Day: {user.day ?? '—'}</Text>
+    <Text style={styles.label}>Credit score: {user?.credit?.creditScore ?? user?.creditScore ?? '—'}</Text>
         <View style={{ height: 12 }} />
   <Text style={styles.label}>Credit Card Bill: ${Number(user?.credit?.creditCardbill ?? user.creditCardbill ?? 0) || 0}</Text>
-  <Text style={styles.label}>Credit Card Limit (total): ${creditLimit}</Text>
+  <Text style={styles.label}>Total credit limit: ${creditLimit}</Text>
 
         <View style={{ height: 12 }} />
         <Text style={[styles.sub, { marginBottom: 8 }]}>Your Credit Cards</Text>

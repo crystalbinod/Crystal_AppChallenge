@@ -76,13 +76,14 @@ export default function JobScreen() {
       </Text>
 
       {/* Part-Time Button */}
-            <TouchableOpacity
+           <View style={{flexDirection  : 'row'}}>
+             <TouchableOpacity
               onPress= {() => { FreelanceStopwatch.start(); (navigation as any).navigate('snakegame'); }}
               activeOpacity={0.7}
             >
               <Image 
                 source={require('../assets/button.png')}
-                style={{ width: 200, height: 100, position: 'absolute', alignSelf: 'center' }}
+                style={{ width: 200, height: 100, position: 'absolute', alignSelf: 'center', marginRight: 70 }}
               />
               <Text style={{
                 paddingTop: 30,
@@ -91,6 +92,7 @@ export default function JobScreen() {
                 fontSize: 20,
                 fontWeight: "bold",
                 fontFamily: "Pixel",
+                marginRight: 70 
               }}>
                 Snake Game 
               </Text>
@@ -101,7 +103,7 @@ export default function JobScreen() {
             >
               <Image 
                 source={require('../assets/button.png')}
-                style={{ width: 200, height: 100, position: 'absolute', alignSelf: 'center' }}
+                style={{ width: 200, height: 100, position: 'absolute', alignSelf: 'center', marginLeft: 70 }}
               />
               <Text style={{
                 paddingTop: 30,
@@ -110,10 +112,12 @@ export default function JobScreen() {
                 fontSize: 20,
                 fontWeight: "bold",
                 fontFamily: "Pixel",
+                marginLeft: 70
               }}>
                 Cup-Pong
               </Text>
             </TouchableOpacity>
+           </View>
             <TouchableOpacity
               onPress= {() => { FreelanceStopwatch.start(); (navigation as any).navigate('FlappyBird'); }}
               activeOpacity={0.7}

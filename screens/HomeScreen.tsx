@@ -509,7 +509,7 @@ export default function HomeScreen() {
               fontFamily: 'Pixel',
               fontWeight: 'bold',
             }}>
-              Day:{userData.day}
+              Day: {userData.day}
             </Text>
           </Text>
         </View>

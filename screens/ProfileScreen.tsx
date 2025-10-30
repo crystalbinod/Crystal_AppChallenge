@@ -146,11 +146,14 @@ const styles = StyleSheet.create({
     }
       ,
   value: {
+            paddingBlock:1,
+            borderWidth: 2,
             backgroundColor: '#C97D60',
-            
+            borderRadius:10,
+            paddingHorizontal: 8,
             color: '#080808ff',
             marginTop:20, 
-            
+          
             
             fontFamily:'Pixel', 
             alignSelf:'center',

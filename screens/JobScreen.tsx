@@ -97,7 +97,7 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
 
     // Center the content in the screen
     <View style={{ flex: 1, flexDirection:"row", alignItems: 'center', backgroundColor: '#F2E5D7' }}>
-      <View style={{ marginHorizontal: 80 }}>
+      <View style={{ marginHorizontal: 160, marginRight:200 }}>
         <TouchableOpacity
                 onPress={async () => {
         await CheckConditions();
@@ -133,7 +133,7 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
                 <Image 
                   source={require('../assets/button.png')}
                   style={{
-                    width: 200,
+                    width: 255,
                     height: 100,
                     position: 'absolute',
                     alignSelf: 'center',
@@ -166,7 +166,7 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
                 <Image 
                   source={require('../assets/button.png')}
                   style={{
-                    width: 200,
+                    width: 255,
                     height: 100,
                     position: 'absolute',
                     alignSelf: 'center', 
@@ -174,7 +174,7 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
                 />
                 <Text style={{
                   paddingTop: 30,
-                  marginBottom: 30,
+                  marginBottom: 40,
                   color: '#63372C',
                   fontSize: 20,
                   fontWeight: "bold",
@@ -193,7 +193,7 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
                 <Image 
                   source={require('../assets/button.png')}
                   style={{
-                    width: 200,
+                    width: 255,
                     height: 100,
                     position: 'absolute',
                     alignSelf: 'center', 

@@ -64,23 +64,25 @@ export default function JobScreen() {
       </Text>
 
   <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>Session: {formatTime(elapsedMs)} {swRunning ? '(running)' : '(paused)'}</Text>
-
-      {/* Part-Time Button */}
-      <TouchableOpacity
+<View style={{flex:1,
+    flexDirection:'row'}}>
+        <View style={{marginRight:40}}> 
+            <TouchableOpacity
         onPress= {() => { PartTimeStopwatch.start(); (navigation as any).navigate('MineSweeper'); }}
         activeOpacity={0.7}
       >
         <Image 
           source={require('../assets/button.png')}
-          style={{ width: 200, height: 100, position: 'absolute', alignSelf: 'center' }}
+          style={{ width: 240, height: 100, position: 'absolute', alignSelf: 'center' }}
         />
         <Text style={{
           paddingTop: 30,
-          marginBottom: 30,
+          marginBottom: 40,
           color: '#63372C',
           fontSize: 20,
           fontWeight: "bold",
           fontFamily: "Pixel",
+          alignSelf: 'center',  
         }}>
           MineSweeper 
         </Text>
@@ -91,7 +93,7 @@ export default function JobScreen() {
       >
         <Image 
           source={require('../assets/button.png')}
-          style={{ width: 200, height: 100, position: 'absolute', alignSelf: 'center' }}
+          style={{ width: 240, height: 100, position: 'absolute', alignSelf: 'center' }}
         />
         <Text style={{
           paddingTop: 30,
@@ -100,25 +102,29 @@ export default function JobScreen() {
           fontSize: 20,
           fontWeight: "bold",
           fontFamily: "Pixel",
+          alignSelf: 'center', 
         }}>
           Memory Game 
         </Text>
       </TouchableOpacity>
-      <TouchableOpacity
+        </View>
+        <View>
+        <TouchableOpacity
         onPress= {() => { PartTimeStopwatch.start(); (navigation as any).navigate('Pong'); }}
         activeOpacity={0.7}
       >
         <Image 
           source={require('../assets/button.png')}
-          style={{ width: 200, height: 100, position: 'absolute', alignSelf: 'center' }}
+          style={{ width: 240, height: 100, position: 'absolute', alignSelf: 'center' }}
         />
         <Text style={{
           paddingTop: 30,
-          marginBottom: 30,
+          marginBottom: 40,
           color: '#63372C',
           fontSize: 20,
           fontWeight: "bold",
           fontFamily: "Pixel",
+          alignSelf: 'center',
         }}>
           Pong
         </Text>
@@ -129,7 +135,7 @@ export default function JobScreen() {
       >
         <Image 
           source={require('../assets/button.png')}
-          style={{ width: 200, height: 100, position: 'absolute', alignSelf: 'center' }}
+          style={{ width: 240, height: 100, position: 'absolute', alignSelf: 'center' }}
         />
         <Text style={{
           paddingTop: 30,
@@ -138,10 +144,16 @@ export default function JobScreen() {
           fontSize: 20,
           fontWeight: "bold",
           fontFamily: "Pixel",
+          alignSelf: 'center', 
         }}>
           Whack-A-Mole
         </Text>
       </TouchableOpacity>
+        </View>
+    </View>
+      {/* Part-Time Button */}
+      
+      
     </View>
   );
 }
