@@ -14,6 +14,7 @@ import CompanyStopwatch from '../lib/stopwatch';
 import FreelanceStopwatch from '../lib/stopwatch_freelance';
 import PartTimeStopwatch from '../lib/stopwatch_parttime';
 import { Alert } from 'react-native';
+import AIChatBot from '../components/AIChatBot';
 
 
 export default function HomeScreen() {
@@ -1140,6 +1141,8 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
       )}
+
+      <AIChatBot userData={userData} />
       
     </View>
   );
