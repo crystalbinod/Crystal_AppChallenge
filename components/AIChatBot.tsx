@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   TextInput,
   ScrollView,
@@ -15,6 +16,7 @@ import {
   getChatResponse,
   getWelcomeMessage,
 } from '../lib/chatbot';
+import { askGemini, hasGeminiApiKey } from '../lib/gemini';
 
 type Props = {
   userData?: { [key: string]: any };
@@ -49,21 +51,44 @@ export default function AIChatBot({ userData }: Props) {
       text: trimmed,
     };
 
+    const history = messages
+      .filter((message) => message.id !== 'welcome')
+      .map(({ role, text }) => ({ role, text }));
+
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setTyping(true);
 
-    // Small delay so the reply feels like a chatbot is thinking
-    await new Promise((resolve) => setTimeout(resolve, 450));
+    try {
+      let replyText: string;
 
-    const reply: ChatMessage = {
-      id: `assistant-${Date.now()}`,
-      role: 'assistant',
-      text: getChatResponse(trimmed, userData),
-    };
+      if (hasGeminiApiKey()) {
+        replyText = await askGemini(userData, history, trimmed);
+      } else {
+        replyText = getChatResponse(trimmed, userData);
+      }
 
-    setMessages((prev) => [...prev, reply]);
-    setTyping(false);
+      const reply: ChatMessage = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        text: replyText,
+      };
+
+      setMessages((prev) => [...prev, reply]);
+    } catch (error: any) {
+      const fallback = getChatResponse(trimmed, userData);
+      const reply: ChatMessage = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        text: hasGeminiApiKey()
+          ? `I couldn't reach Gemini right now, so here's a quick answer:\n\n${fallback}`
+          : fallback,
+      };
+      setMessages((prev) => [...prev, reply]);
+      console.warn('Chatbot reply failed', error?.message || error);
+    } finally {
+      setTyping(false);
+    }
   };
 
   return (
@@ -73,9 +98,18 @@ export default function AIChatBot({ userData }: Props) {
           style={styles.fab}
           onPress={() => setOpen(true)}
           activeOpacity={0.85}
-          accessibilityLabel="Open AI assistant"
+          accessibilityLabel="Open Piggy assistant"
         >
-          <Text style={styles.fabText}>AI</Text>
+          <View style={styles.fabBubble}>
+            <Image
+              source={require('../assets/pig_icon.png')}
+              style={styles.fabImage}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.chatBadge}>
+            <Text style={styles.chatBadgeText}>...</Text>
+          </View>
         </TouchableOpacity>
       )}
 
@@ -87,7 +121,14 @@ export default function AIChatBot({ userData }: Props) {
         >
           <View style={styles.panel}>
             <View style={styles.header}>
-              <Text style={styles.headerTitle}>Game Assistant</Text>
+              <View style={styles.headerLeft}>
+                <Image
+                  source={require('../assets/pig_icon.png')}
+                  style={styles.headerIcon}
+                  resizeMode="contain"
+                />
+                <Text style={styles.headerTitle}>Piggy</Text>
+              </View>
               <TouchableOpacity
                 onPress={() => setOpen(false)}
                 style={styles.closeBtn}
@@ -126,6 +167,7 @@ export default function AIChatBot({ userData }: Props) {
               {typing && (
                 <View style={[styles.bubble, styles.botBubble, styles.typingBubble]}>
                   <ActivityIndicator size="small" color="#63372C" />
+                  <Text style={styles.typingText}>Piggy is thinking...</Text>
                 </View>
               )}
             </ScrollView>
@@ -135,7 +177,7 @@ export default function AIChatBot({ userData }: Props) {
                 style={styles.input}
                 value={input}
                 onChangeText={setInput}
-                placeholder="Ask a question..."
+                placeholder="Ask Piggy anything..."
                 placeholderTextColor="#8a6a5a"
                 multiline
                 maxLength={300}
@@ -162,26 +204,49 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     bottom: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#63372C',
-    borderWidth: 3,
-    borderColor: '#C97D60',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 64,
+    height: 64,
     zIndex: 1000,
     elevation: 6,
+  },
+  fabBubble: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#ffd27a',
+    borderWidth: 3,
+    borderColor: '#63372C',
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
-  fabText: {
-    color: '#ffd27a',
+  fabImage: {
+    width: 46,
+    height: 46,
+  },
+  chatBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#ffb5b5',
+    borderWidth: 2,
+    borderColor: '#63372C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  chatBadgeText: {
+    color: '#63372C',
     fontFamily: 'Pixel',
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: 'bold',
+    marginTop: -2,
   },
   panelWrap: {
     position: 'absolute',
@@ -210,6 +275,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#63372C',
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerIcon: {
+    width: 28,
+    height: 28,
+    marginRight: 8,
   },
   headerTitle: {
     color: '#ffd27a',
@@ -252,8 +326,16 @@ const styles = StyleSheet.create({
     borderColor: '#63372C',
   },
   typingBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  typingText: {
+    fontFamily: 'Pixel',
+    fontSize: 11,
+    color: '#63372C',
   },
   bubbleText: {
     fontFamily: 'Pixel',

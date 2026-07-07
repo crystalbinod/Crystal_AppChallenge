@@ -19,7 +19,40 @@ const pick = (text: string) => text.toLowerCase();
 export function getWelcomeMessage(userData?: UserContext): string {
   const name = userData?.displayName?.trim();
   const greeting = name ? `Hey ${name}!` : 'Hey there!';
-  return `${greeting} I'm your game assistant. Ask me about jobs, bills, credit, loans, food, or how to play.`;
+  return `${greeting} I'm Piggy, your pocketpiggy guide. Ask me anything about jobs, bills, credit, food, or how to play!`;
+}
+
+export function buildSystemPrompt(userData?: UserContext): string {
+  const context = userData
+    ? `
+Current player snapshot:
+- Name: ${userData.displayName || 'unknown'}
+- Day: ${userData.day ?? 'unknown'}
+- Job: ${userData.job || 'none'}
+- Food: ${userData.food ?? 'unknown'}
+- Total balance: ${userData.liquidMoney?.total ?? 'unknown'}
+- Credit score: ${userData.credit?.creditScore ?? 'unknown'}
+- Credit card bill: ${userData.credit?.creditCardbill ?? 'unknown'}
+- Reminders: ${userData.reminders || 'none'}`
+    : '';
+
+  return `You are Piggy, a friendly and cute assistant for the mobile game "pocketpiggy" — a finance life simulator with pixel-art style.
+
+Help players understand how to earn money, pay bills, manage credit, avoid starvation, and progress through in-game days. Keep answers short, clear, and encouraging. Use bullet points when listing rules.
+
+Game rules:
+- Jobs: Company ($200/min, need 4+ min), Freelance ($150/min, need 1+ min), Part-time ($100/min, need 3+ min). Work time is tracked by stopwatches on job screens.
+- Press Next Day to advance. It costs 2 food, stores work minutes, may trigger payouts, and can block advancement if bills are due today.
+- Rent every 15 days (~$200) unless the player owns a house.
+- Credit card bills every 15 days. Pay from checking, savings, or charge to credit. Closing statement is 5 days before due.
+- Utilities every 30 days (~$40). Taxes every 45 days (~$100).
+- Loans from the Loan screen; installments due every 15 days.
+- Food: if food stays at 0 for more than 5 consecutive days, the player dies and the account is deleted. Buy food from Shop.
+- liquidMoney.total is the main balance; checking and savings are sub-accounts.
+- Reminders on the home screen show upcoming due dates.
+
+Only answer questions about this game and personal finance within the game. If asked unrelated questions, gently redirect back to the game.
+${context}`;
 }
 
 export function getChatResponse(message: string, userData?: UserContext): string {
@@ -54,9 +87,7 @@ export function getChatResponse(message: string, userData?: UserContext): string
   }
 
   if (q.includes('rent') || q.includes('housing') || q.includes('house')) {
-    return (
-      'Rent is due every 15 in-game days unless you own a house. If your housing is set to house/own, rent is skipped. Default rent is about $200.'
-    );
+    return 'Rent is due every 15 in-game days unless you own a house. If your housing is set to house/own, rent is skipped. Default rent is about $200.';
   }
 
   if (q.includes('credit') || q.includes('card') || q.includes('score')) {
@@ -68,9 +99,7 @@ export function getChatResponse(message: string, userData?: UserContext): string
   }
 
   if (q.includes('loan')) {
-    return (
-      'Loans can be taken from the Loan screen. Each loan has a monthly payment due every 15 days. Pay on time or use checking, savings, or credit. Loans hurt your credit score if you carry a lot of debt.'
-    );
+    return 'Loans can be taken from the Loan screen. Each loan has a monthly payment due every 15 days. Pay on time or use checking, savings, or credit. Loans hurt your credit score if you carry a lot of debt.';
   }
 
   if (q.includes('food') || q.includes('starv') || q.includes('eat') || q.includes('hungry')) {
@@ -105,16 +134,12 @@ export function getChatResponse(message: string, userData?: UserContext): string
   }
 
   if (q.includes('help') || q.includes('how') || q.includes('play') || q.includes('rule')) {
-    return (
-      'This is a finance life sim. Work jobs, pay bills on time, manage credit, avoid starvation, and grow your money. Tap Learn on the home screen for the full rulebook, or ask me about jobs, rent, credit, loans, food, or Next Day.'
-    );
+    return 'This is a finance life sim. Work jobs, pay bills on time, manage credit, avoid starvation, and grow your money. Tap Learn on the home screen for the full rulebook, or ask me about jobs, rent, credit, loans, food, or Next Day.';
   }
 
   if (q.includes('thank')) {
     return 'You got it! Ask anytime if you need help with the game.';
   }
 
-  return (
-    "I'm not sure about that one. Try asking about jobs, rent, credit, loans, food, bills, or how Next Day works. You can also tap Learn on the home screen for the full guide."
-  );
+  return "I'm not sure about that one. Try asking about jobs, rent, credit, loans, food, bills, or how Next Day works. You can also tap Learn on the home screen for the full guide.";
 }
