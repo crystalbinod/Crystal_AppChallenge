@@ -18,6 +18,7 @@ import {
   getWelcomeMessage,
 } from '../lib/chatbot';
 import { askGemini, hasGeminiApiKey } from '../lib/gemini';
+import SpeakButton from './SpeakButton';
 
 type Props = {
   userData?: { [key: string]: any };
@@ -168,6 +169,9 @@ export default function AIChatBot({ userData }: Props) {
                   >
                     {msg.text}
                   </Text>
+                  {msg.role === 'assistant' && (
+                    <SpeakButton text={msg.text} compact variant="dark" />
+                  )}
                 </View>
               ))}
 
@@ -314,8 +318,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: '#ffd27a',
-    fontFamily: 'Pixel',
-    fontSize: 14,
+    fontFamily: 'Windows',
+    fontSize: 16,
     fontWeight: 'bold',
   },
   closeBtn: {
@@ -367,14 +371,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   typingText: {
-    fontFamily: 'Pixel',
-    fontSize: 11,
+    fontFamily: 'LazyDaze',
+    fontSize: 13,
     color: '#63372C',
   },
   bubbleText: {
-    fontFamily: 'Pixel',
-    fontSize: 12,
-    lineHeight: 18,
+    fontFamily: 'LazyDaze',
+    fontSize: 14,
+    lineHeight: 21,
   },
   userBubbleText: {
     color: '#63372C',
@@ -400,8 +404,8 @@ const styles = StyleSheet.create({
     borderColor: '#63372C',
     paddingHorizontal: 10,
     paddingVertical: 8,
-    fontFamily: 'Pixel',
-    fontSize: 12,
+    fontFamily: 'LazyDaze',
+    fontSize: 14,
     color: '#63372C',
     marginRight: 8,
   },
@@ -416,8 +420,8 @@ const styles = StyleSheet.create({
   },
   sendBtnText: {
     color: '#ffd27a',
-    fontFamily: 'Pixel',
-    fontSize: 12,
+    fontFamily: 'Windows',
+    fontSize: 13,
     fontWeight: 'bold',
   },
 });

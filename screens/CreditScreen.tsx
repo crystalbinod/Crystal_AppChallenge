@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { auth, db } from '../lib/firebase';
 import { doc, getDoc, runTransaction, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
+import FinanceHelpLink from '../components/FinanceHelpLink';
 
 function makeId() {
   return 'card_' + Date.now();
@@ -141,6 +142,7 @@ export default function CreditScreen() {
     <Text style={styles.label}>Job: {user.job || '—'}</Text>
     <Text style={styles.label}>Day: {user.day ?? '—'}</Text>
     <Text style={styles.label}>Credit score: {user?.credit?.creditScore ?? user?.creditScore ?? '—'}</Text>
+        <FinanceHelpLink topic="utilization" label="What is utilization?" />
         <View style={{ height: 12 }} />
   <Text style={styles.label}>Credit Card Bill: ${Number(user?.credit?.creditCardbill ?? user.creditCardbill ?? 0) || 0}</Text>
   <Text style={styles.label}>Total credit limit: ${creditLimit}</Text>

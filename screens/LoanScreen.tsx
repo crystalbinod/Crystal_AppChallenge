@@ -4,11 +4,14 @@ import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert,
 import { auth, db } from '../lib/firebase';
 import { doc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { useFonts } from 'expo-font';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import FinanceHelpLink from '../components/FinanceHelpLink';
 
 export default function LoanScreen() {
   const [fontsLoaded] = useFonts({
     'Windows': require('../assets/windows-bold.ttf'),
     'Pixel': require('../assets/pixel.ttf'),
+    'LazyDaze': require('../assets/ATP-Lazy Daze.ttf'),
   });
 
   const [userData, setUserData] = React.useState<any>(null);
@@ -117,7 +120,7 @@ export default function LoanScreen() {
       if (result.approved) {
         setStatus(`Approved — loan id ${result.loanId}, rate ${result.interestRate}% APR, monthly $${result.monthlyPayment}`);
       } else {
-        setStatus(`Application denied (probability ${Math.round((result as any).chance * 100)}%)`);
+        setStatus('Application denied. Try a smaller amount or improve your credit score.');
       }
     } catch (e: any) {
       console.error('applyForLoan', e);
@@ -129,9 +132,17 @@ export default function LoanScreen() {
 
   const creditScore = userData?.credit?.creditScore ?? null;
   const creditLimit = Number(userData?.credit?.creditLimit) || 0;
+  const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: insets.bottom + 48,
+      }}
+    >
       <View style={styles.card}>
         <Text style={styles.title}>Loans</Text>
         <Text style={styles.label}>Credit score: {creditScore ?? 'N/A'}</Text>
@@ -143,24 +154,25 @@ export default function LoanScreen() {
         <Text style={styles.label}>Term (months)</Text>
         <TextInput style={styles.input} keyboardType="numeric" value={termMonths} onChangeText={setTermMonths} />
 
+        <FinanceHelpLink topic="apr" label="What is APR?" variant="light" />
+
         <View style={{ height: 12 }} />
         <TouchableOpacity onPress={applyForLoan} style={styles.button} disabled={loading}>
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Apply</Text>}
         </TouchableOpacity>
 
-        {status ? <Text style={{ marginTop: 12 }}>{status}</Text> : null}
+        {status ? <Text style={styles.status}>{status}</Text> : null}
 
-        {/* Existing loans */}
         {userData?.loans ? (
-          <View style={{ marginTop: 16 }}>
-            <Text style={{ fontFamily: 'Pixel', fontWeight: '700' }}>Your loans</Text>
+          <View style={styles.loansSection}>
+            <Text style={styles.loansTitle}>Your loans</Text>
             {Object.entries(userData.loans).map(([id, loan]: any) => (
-              <View key={id} style={{ backgroundColor: '#fff', padding: 8, borderRadius: 8, marginTop: 8 }}>
-                <Text style={{ fontFamily: 'Pixel' }}>{id}</Text>
-                <Text style={{ fontFamily: 'Pixel' }}>Amount: ${loan.amount}</Text>
-                <Text style={{ fontFamily: 'Pixel' }}>Rate: {loan.interestRate}%</Text>
-                <Text style={{ fontFamily: 'Pixel' }}>Term: {loan.termMonths} months</Text>
-                <Text style={{ fontFamily: 'Pixel' }}>Monthly: ${loan.monthlyPayment}</Text>
+              <View key={id} style={styles.loanCard}>
+                <Text style={styles.loanDetail}>{id}</Text>
+                <Text style={styles.loanDetail}>Amount: ${loan.amount}</Text>
+                <Text style={styles.loanDetail}>Rate: {loan.interestRate}%</Text>
+                <Text style={styles.loanDetail}>Term: {loan.termMonths} months</Text>
+                <Text style={styles.loanDetail}>Monthly: ${loan.monthlyPayment}</Text>
               </View>
             ))}
           </View>
@@ -174,8 +186,22 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2E5D7' },
   card: { backgroundColor: '#fff8f3', padding: 20, borderRadius: 12, marginVertical: 8 },
   title: { fontSize: 28, color: '#63372C', fontFamily: 'Windows', marginBottom: 8 },
-  label: { fontFamily: 'Pixel', color: '#333', marginTop: 8 },
-  input: { borderWidth: 1, borderColor: '#C97D60', padding: 8, borderRadius: 8, marginTop: 6, fontFamily: 'Pixel', backgroundColor: '#fff' },
+  label: { fontFamily: 'LazyDaze', fontSize: 15, color: '#333', marginTop: 8 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#C97D60',
+    padding: 8,
+    borderRadius: 8,
+    marginTop: 6,
+    fontFamily: 'LazyDaze',
+    fontSize: 15,
+    backgroundColor: '#fff',
+  },
   button: { backgroundColor: '#C97D60', padding: 12, borderRadius: 8, marginTop: 12, alignItems: 'center' },
-  buttonText: { color: '#fff', fontFamily: 'Pixel' },
+  buttonText: { color: '#fff', fontFamily: 'Windows', fontSize: 14 },
+  status: { marginTop: 12, fontFamily: 'LazyDaze', fontSize: 14, color: '#333', lineHeight: 20 },
+  loansSection: { marginTop: 16 },
+  loansTitle: { fontFamily: 'Windows', fontSize: 18, color: '#63372C', marginBottom: 4 },
+  loanCard: { backgroundColor: '#fff', padding: 10, borderRadius: 8, marginTop: 8, borderWidth: 1, borderColor: '#e8d5c4' },
+  loanDetail: { fontFamily: 'LazyDaze', fontSize: 15, color: '#3d2a22', lineHeight: 22, marginTop: 2 },
 });

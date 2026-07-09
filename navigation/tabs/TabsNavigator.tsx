@@ -10,6 +10,7 @@ import BankScreen from '../../screens/BankScreen';
 import LearnScreen from '../../screens/LearnScreen';
 import DrawerNavigator from '../drawer/DrawerNavigator';
 import { useFonts } from 'expo-font';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 // Define the types for your bottom tab routes and their parameters
@@ -29,6 +30,7 @@ const Tab = createBottomTabNavigator<TabsParamList>();
 
 //function to create the bottom tab navigator
 export default function TabsNavigator() {
+  const insets = useSafeAreaInsets();
   const [fontsLoaded] = useFonts({
       'LazyDaze': require('../../assets/ATP-Lazy Daze.ttf'),
       'Windows': require('../../assets/windows-bold.ttf'),
@@ -44,15 +46,16 @@ export default function TabsNavigator() {
         tabBarActiveTintColor: '#63372C', // Color of active tab icon and label
         tabBarInactiveTintColor: '#63372cb4', // Color of inactive tab icon and label'#7e4c40ff'
         tabBarStyle: {
-          borderRadius:10, 
-          backgroundColor: '#c78e71ff', // Background color of the tab bar
-          height: 60, // Height of the tab bar
-           // Padding at the bottom
+          borderRadius: 10,
+          backgroundColor: '#c78e71ff',
+          height: 56 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 8),
+          paddingTop: 6,
         },
-        
-        tabBarLabelStyle: { 
-          fontSize: 15, // Font size of tab labels
-          fontFamily:'Pixel',
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontFamily: 'Pixel',
+          marginBottom: 2,
         },
       }}
      initialRouteName="Home">

@@ -9,6 +9,7 @@ import { auth, db } from '../lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, increment, runTransaction, deleteField, deleteDoc } from 'firebase/firestore';
 import { signOut, deleteUser } from 'firebase/auth';
 import { useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CompanyStopwatch from '../lib/stopwatch';
 import FreelanceStopwatch from '../lib/stopwatch_freelance';
@@ -97,6 +98,76 @@ export default function HomeScreen() {
   // get the navigation object with proper typing for RootStackParamList
   // this makes sure TypeScript knows 'Details' exists and accepts 'id' as a param
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const isPortrait = height > width;
+  const leftFlex = isPortrait ? 0.28 : 1;
+  const btnW = isPortrait ? Math.min(170, Math.floor((width - 48) / 2)) : 200;
+  const btnH = isPortrait ? 90 : 100;
+  const titleSize = isPortrait ? 26 : 38;
+  const btnLabelPt = isPortrait ? 28 : 30;
+  const btnLabelMb = isPortrait ? 0 : 30;
+  const btnFontSize = isPortrait ? 18 : 20;
+  const panelRadius = isPortrait ? 22 : 40;
+  const portraitPanelMaxHeight = Math.floor(height * 0.42);
+
+  const profileJobButtons = (
+    <>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Profile', { id: '123' })}
+        activeOpacity={0.7}
+        style={isPortrait ? { alignItems: 'center', minWidth: btnW, minHeight: btnH } : undefined}
+      >
+        <Image
+          source={require('../assets/button.png')}
+          style={{
+            width: btnW,
+            height: btnH,
+            position: 'absolute',
+            alignSelf: 'center',
+          }}
+        />
+        <Text style={{
+          paddingTop: btnLabelPt,
+          marginBottom: isPortrait ? 0 : btnLabelMb,
+          color: '#63372C',
+          fontSize: btnFontSize,
+          fontWeight: 'bold',
+          fontFamily: 'Pixel',
+          textAlign: 'center',
+        }}>
+          Profile
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Job')}
+        activeOpacity={0.7}
+        style={isPortrait ? { alignItems: 'center', minWidth: btnW, minHeight: btnH, marginLeft: 12 } : undefined}
+      >
+        <Image
+          source={require('../assets/button.png')}
+          style={{
+            width: btnW,
+            height: btnH,
+            position: 'absolute',
+            alignSelf: 'center',
+          }}
+        />
+        <Text style={{
+          paddingTop: btnLabelPt,
+          marginBottom: isPortrait ? 0 : 10,
+          color: '#63372C',
+          fontSize: btnFontSize,
+          fontWeight: 'bold',
+          fontFamily: 'Pixel',
+          textAlign: 'center',
+        }}>
+          Job
+        </Text>
+      </TouchableOpacity>
+    </>
+  );
 
   // helper: compute days until next period using same 1-based day convention
   const daysUntilDue = (dayRaw: any, period: number) => {
@@ -478,94 +549,63 @@ export default function HomeScreen() {
 
   // main screen layout with two columns
   return (
-    <View style={{ 
-      flex: 1, 
-      flexDirection: 'row',
+    <View style={{
+      flex: 1,
+      flexDirection: isPortrait ? 'column' : 'row',
       backgroundColor: '#F2E5D7',
-      paddingLeft: 7, 
+      paddingLeft: isPortrait ? 0 : 7,
+      paddingTop: insets.top,
     }}>
-      
-      {/* LEFT COLUMN - first Box with Navigation Buttons */}
-      <View style={{ 
-        flex: 1, 
-        backgroundColor: '#F2E5D7',
-        marginBottom: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}>
-        
-        {/* Home Screen Title */}
-        <Text style={{
-          fontSize: 38,
-          color: '#C97D60',
-          fontFamily: 'Windows',
-          fontWeight:"bold"
+
+      {isPortrait ? (
+        <View style={{
+          alignItems: 'center',
+          paddingHorizontal: 14,
+          paddingBottom: 12,
         }}>
-          HOME SCREEN
-        </Text>
-
-        {/* Profile Button */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Profile', { id: '123' })}
-          activeOpacity={0.7}
-        >
-          <Image 
-            source={require('../assets/button.png')}
-            style={{
-              width: 200,
-              height: 100,
-              position: 'absolute',
-              alignSelf: 'center', 
-            }}
-          />
           <Text style={{
-            paddingTop: 30,
-            marginBottom: 30,
-            color: '#63372C',
-            fontSize: 20,
-            fontWeight: "bold",
-            fontFamily: "Pixel",
-          }}>
-            Profile
-          </Text>
-        </TouchableOpacity>
-
-        {/* Job Button */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Job')}
-          activeOpacity={0.7}
-        >
-          <Image 
-            source={require('../assets/button.png')}
-            style={{
-              width: 200,
-              height: 100,
-              position: 'absolute',
-              alignSelf: 'center', 
-            }}
-          />
-          <Text style={{
-            paddingTop: 30,
+            fontSize: titleSize,
+            color: '#C97D60',
+            fontFamily: 'Windows',
+            fontWeight: 'bold',
             marginBottom: 10,
-            color: '#63372C',
-            fontSize: 20,
-            fontWeight: "bold",
-            fontFamily: "Pixel",
           }}>
-            Job
+            HOME
           </Text>
-        </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            {profileJobButtons}
+          </View>
+        </View>
+      ) : (
+        <View style={{
+          flex: leftFlex,
+          backgroundColor: '#F2E5D7',
+          marginBottom: 20,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          <Text style={{
+            fontSize: titleSize,
+            color: '#C97D60',
+            fontFamily: 'Windows',
+            fontWeight: 'bold',
+            textAlign: 'center',
+          }}>
+            HOME SCREEN
+          </Text>
+          {profileJobButtons}
+        </View>
+      )}
 
-        
-      </View>
-
-      {/* RIGHT COLUMN - Second Box with a Scroll*/}
-      <ScrollView style={{ 
-        flex: 1,
-        backgroundColor: '#c78e71ff', 
-        marginVertical: 7,
-        marginRight: 10,
-        borderRadius: 40,
+      {/* Main brown panel — capped height in portrait so nav buttons stay prominent */}
+      <ScrollView style={{
+        flex: isPortrait ? 0 : 1,
+        maxHeight: isPortrait ? portraitPanelMaxHeight : undefined,
+        backgroundColor: '#c78e71ff',
+        marginVertical: isPortrait ? 4 : 7,
+        marginHorizontal: isPortrait ? 10 : 0,
+        marginRight: isPortrait ? 10 : 10,
+        borderRadius: panelRadius,
         borderWidth: 5,
         borderColor: '#63372C',
       }}>
@@ -1127,8 +1167,10 @@ export default function HomeScreen() {
       {showLearnHint && (
         <Animated.View style={{
           position: 'absolute',
-          right: 30,
-          top: 220,
+          right: isPortrait ? 16 : 30,
+          ...(isPortrait
+            ? { bottom: 72 + insets.bottom }
+            : { top: 220 }),
           zIndex: 999,
           alignItems: 'center',
           transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] }) }]

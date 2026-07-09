@@ -113,7 +113,7 @@ export default function LoanScreen() {
       if (result.approved) {
         setStatus(`Approved — loan id ${result.loanId}, rate ${result.interestRate}% APR, monthly $${result.monthlyPayment}`);
       } else {
-        setStatus(`Application denied (probability ${Math.round((result as any).chance * 100)}%)`);
+        setStatus('Application denied. Try a smaller amount or improve your credit score.');
       }
     } catch (e: any) {
       console.error('applyForLoan', e);

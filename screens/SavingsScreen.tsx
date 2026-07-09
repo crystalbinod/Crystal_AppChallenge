@@ -21,10 +21,23 @@ function sanitizeKey(raw: string) {
   return raw.trim().replace(/\s+/g, '_').replace(/\./g, '_');
 }
 
+function sumAccountValues(map: Record<string, any> | undefined) {
+  return Object.values(map || {}).reduce((s: number, v: any) => s + (Number(v) || 0), 0);
+}
+
+function showTooBrokeAlert(liquidTotal: number, checkingTotal: number) {
+  Alert.alert(
+    'Too broke!',
+    `You're too broke — you don't have enough money. You have $${liquidTotal} in total. Try reducing some of the $${checkingTotal} in your checking account.`,
+  );
+}
+
 export default function SavingsScreen() {
   const [loading, setLoading] = useState(true);
   const [savingsMap, setSavingsMap] = useState<Record<string, number>>({});
   const [total, setTotal] = useState<number>(0);
+  const [liquidTotal, setLiquidTotal] = useState<number>(0);
+  const [checkingTotal, setCheckingTotal] = useState<number>(0);
 
   // Add form state
   const [newName, setNewName] = useState('');
@@ -54,15 +67,20 @@ export default function SavingsScreen() {
       const savings = (liquid.savingsAccount && typeof liquid.savingsAccount === 'object')
         ? (liquid.savingsAccount as Record<string, any>)
         : {};
+      const checking = (liquid.checkingAccount && typeof liquid.checkingAccount === 'object')
+        ? (liquid.checkingAccount as Record<string, any>)
+        : {};
 
       const parsed: Record<string, number> = {};
       for (const [k, v] of Object.entries(savings)) {
         parsed[k] = Number(v) || 0;
       }
-  setSavingsMap(parsed);
-  // Show grand total for savings accounts only (sum of savingsAccount fields)
-  const savingsSum = Object.values(parsed).reduce((s, n) => s + (Number(n) || 0), 0);
-  setTotal(savingsSum);
+      setSavingsMap(parsed);
+      setLiquidTotal(Number(liquid.total) || 0);
+      setCheckingTotal(sumAccountValues(checking));
+      // Show grand total for savings accounts only (sum of savingsAccount fields)
+      const savingsSum = Object.values(parsed).reduce((s, n) => s + (Number(n) || 0), 0);
+      setTotal(savingsSum);
       setLoading(false);
     }, (err) => {
       console.error('savings onSnapshot error', err);
@@ -80,6 +98,12 @@ export default function SavingsScreen() {
     const valueNum = Math.floor(Number(newValue) || 0);
 
     if (!key) return Alert.alert('Invalid name');
+
+    const savingsSum = Object.values(savingsMap).reduce((s, n) => s + (Number(n) || 0), 0);
+    if (checkingTotal + savingsSum + valueNum > liquidTotal) {
+      showTooBrokeAlert(liquidTotal, checkingTotal);
+      return;
+    }
 
     const userRef = doc(db, 'users', user.uid);
     try {
@@ -111,7 +135,12 @@ export default function SavingsScreen() {
       setNewValue('0');
     } catch (e: any) {
       console.error('addSavings error', e);
-      Alert.alert('Error', e.message || String(e));
+      const msg = String(e?.message || e);
+      if (msg.includes('exceed your liquidMoney.total')) {
+        showTooBrokeAlert(liquidTotal, checkingTotal);
+      } else {
+        Alert.alert('Error', msg);
+      }
     }
   };
 
@@ -123,6 +152,13 @@ export default function SavingsScreen() {
     const safeNewKey = sanitizeKey(editingName || oldKey);
     const newValNum = Math.floor(Number(editingValue) || 0);
     const oldValNum = savingsMap[oldKey] || 0;
+
+    const savingsSum = Object.values(savingsMap).reduce((s, n) => s + (Number(n) || 0), 0);
+    const newSavingsSum = savingsSum - oldValNum + newValNum;
+    if (checkingTotal + newSavingsSum > liquidTotal) {
+      showTooBrokeAlert(liquidTotal, checkingTotal);
+      return;
+    }
 
     try {
       await runTransaction(db, async (tx) => {
@@ -161,7 +197,12 @@ export default function SavingsScreen() {
       setEditingKey(null);
     } catch (e: any) {
       console.error('saveEdited savings error', e);
-      Alert.alert('Error', e.message || String(e));
+      const msg = String(e?.message || e);
+      if (msg.includes('exceed your liquidMoney.total')) {
+        showTooBrokeAlert(liquidTotal, checkingTotal);
+      } else {
+        Alert.alert('Error', msg);
+      }
     }
   };
 

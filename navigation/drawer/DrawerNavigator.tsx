@@ -2,7 +2,12 @@ import * as React from 'react';
 
 // import the drawer navigator creator from React Navigation
 // this lets you create a sidebarnavigation menu
-import { createDrawerNavigator } from '@react-navigation/drawer';
+import {
+  createDrawerNavigator,
+  DrawerContentScrollView,
+  DrawerItemList,
+} from '@react-navigation/drawer';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import another navigator (Tabs) — this is to access the homescreen and profile screen in tabs
 // so the tabs navigator is wrapped in the drawer navigator
@@ -33,13 +38,28 @@ export type DrawerParamList = {
 // Create a Drawer Navigator instance that uses the DrawerParamList type
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
-export default function DrawerNavigator() {
+function BankDrawerContent(props: any) {
+  const insets = useSafeAreaInsets();
+
   return (
+    <DrawerContentScrollView
+      {...props}
+      contentContainerStyle={{
+        paddingTop: insets.top + 28,
+        paddingBottom: insets.bottom + 12,
+      }}
+    >
+      <DrawerItemList {...props} />
+    </DrawerContentScrollView>
+  );
+}
 
-     
+export default function DrawerNavigator() {
+  const insets = useSafeAreaInsets();
 
-    // initialRouteName sets which screen appears first
+  return (
     <Drawer.Navigator
+    drawerContent={(props) => <BankDrawerContent {...props} />}
     screenOptions={{
         drawerActiveTintColor:"#ffb5b5ff",
         // Color of active tab icon and label
@@ -56,12 +76,12 @@ export default function DrawerNavigator() {
           fontSize: 12, // Font size of tab labels
           fontFamily:'Pixel',
         },
+        headerStatusBarHeight: insets.top,
         headerStyle: {
-          height: 40,
           backgroundColor: '#eec5c5ff',
           borderBottomRightRadius:10,
           borderBottomLeftRadius:10,
-            
+          height: 52 + insets.top,
           },
       headerTitleStyle: {
           fontFamily: 'Windows', // must match the key you used in useFonts
