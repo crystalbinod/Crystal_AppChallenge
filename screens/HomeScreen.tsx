@@ -30,12 +30,78 @@ export default function HomeScreen() {
     day: '',
     reminders: '',
     emergencyAlerts: '',
+    emergencyDues: [],
   });
   const [loading, setLoading] = useState(true);
 
   // show a one-time learn hint arrow for new users
   const [showLearnHint, setShowLearnHint] = useState(false);
   const pulse = useRef(new Animated.Value(0)).current;
+
+  const emergencyTemplates = [
+    {
+      label: 'Doctor visit:100',
+      amount: 100,
+      todayText: 'You have a doctor visit today. Pay $100.',
+    },
+    {
+      label: 'Car repair:100',
+      amount: 100,
+      todayText: 'Your car broke down. Pay $100 to fix it today.',
+    },
+    {
+      label: "Friends' birthday gift:50",
+      amount: 100,
+      todayText: "Your parents' birthday is today. Buy them a $100 gift.",
+    },
+  ];
+
+  const buildEmergencyAlertText = (eventsRaw: any, dayRaw: any) => {
+    const currentDay = Number(dayRaw) || 0;
+    const events = Array.isArray(eventsRaw) ? eventsRaw : [];
+    const normalized = events
+      .map((entry: any) => {
+        const dueDay = Number(entry?.dueDay) || 0;
+        const amount = Number(entry?.amount) || 0;
+        return {
+          ...entry,
+          dueDay,
+          amount,
+          daysLeft: dueDay <= currentDay ? 0 : dueDay - currentDay,
+        };
+      })
+      .filter((entry: any) => entry.dueDay > 0)
+      .sort((left: any, right: any) => left.daysLeft - right.daysLeft);
+
+    if (normalized.length === 0) return '';
+
+    const nextEvent = normalized[0];
+    if (nextEvent.daysLeft <= 0) return nextEvent.todayText || '';
+    if (nextEvent.daysLeft === 1) return `${nextEvent.label} tomorrow. Pay $${nextEvent.amount}.`;
+    return `${nextEvent.label} in ${nextEvent.daysLeft} days. Pay $${nextEvent.amount}.`;
+  };
+
+  const createRandomEmergencyDue = (dueDay: number) => {
+    const template = emergencyTemplates[Math.floor(Math.random() * emergencyTemplates.length)];
+    return {
+      ...template,
+      id: `emergency-${dueDay}-${Date.now()}`,
+      dueDay,
+    };
+  };
+
+  const mergeUserData = (data: { [k: string]: any }) => {
+    setUserData(prev => ({
+      ...prev,
+      ...data,
+      displayName: data.displayName ?? '',
+      job: data.job ?? '',
+      day: data.day ?? '',
+      reminders: data.reminders ?? '',
+      emergencyAlerts: data.emergencyAlerts ?? '',
+      emergencyDues: Array.isArray(data.emergencyDues) ? data.emergencyDues : [],
+    }));
+  };
 
   // Generic getter for a field (keeps backwards compatibility)
   const getUserFieldValue = async (fieldKey: string): Promise<any | null> => {
@@ -69,16 +135,7 @@ export default function HomeScreen() {
         }
         if (!mounted) return;
         const data = snap.data() || {};
-        // Pick fields you want; this just spreads everything
-        setUserData(prev => ({ ...prev, 
-          ...data,
-          displayName: data.displayName ?? '',
-          job: data.job ?? '',
-          day: data.day ?? '',
-          reminders: data.reminders ?? '',
-          emergencyAlerts: data.emergencyAlerts ?? '',
-         
-         }));
+        mergeUserData(data);
         // show one-time learn hint if user hasn't seen it yet
         try {
           if (!data?.seenLearnHint) setShowLearnHint(true);
@@ -141,6 +198,24 @@ export default function HomeScreen() {
       // ignore
     }
 
+    try {
+      const emergencyDues = Array.isArray(uData?.emergencyDues) ? uData.emergencyDues : [];
+      emergencyDues.forEach((entry: any) => {
+        const dueDay = Number(entry?.dueDay) || 0;
+        if (dueDay <= 0) return;
+        dues.push({
+          label: entry?.label || 'Emergency expense',
+          days: dueDay <= day ? 0 : dueDay - day,
+          amount: Number(entry?.amount) || 0,
+          emergencyId: entry?.id,
+          message: entry?.todayText || '',
+          isEmergency: true,
+        } as any);
+      });
+    } catch (e) {
+      // ignore malformed emergency dues
+    }
+
     // Filter out nulls (shouldn't be) and return
     return dues;
   };
@@ -172,6 +247,11 @@ export default function HomeScreen() {
         if (!s.exists()) throw new Error('User doc missing');
         const d = s.data() as any;
         const liquid = d?.liquidMoney ?? { total: 0, checkingAccount: {}, savingsAccount: {} };
+        const emergencyDues = Array.isArray(d?.emergencyDues) ? d.emergencyDues : [];
+        const nextEmergencyDues = dueItem?.emergencyId
+          ? emergencyDues.filter((entry: any) => String(entry?.id) !== String(dueItem.emergencyId))
+          : emergencyDues;
+        const nextEmergencyAlert = buildEmergencyAlertText(nextEmergencyDues, d?.day);
 
         const loanId = dueItem?.loanId ?? null;
         if (method === 'debit') {
@@ -204,6 +284,10 @@ export default function HomeScreen() {
               updates[`loans.${loanId}.remaining`] = newRem;
             }
           }
+          if (dueItem?.emergencyId) {
+            updates['emergencyDues'] = nextEmergencyDues;
+            updates['emergencyAlerts'] = nextEmergencyAlert;
+          }
           tx.update(userRef, updates);
         } else if (method === 'savings') {
           if (!accountKey) throw new Error('No savings account selected');
@@ -235,6 +319,10 @@ export default function HomeScreen() {
               updates[`loans.${loanId}.remaining`] = newRem;
             }
           }
+          if (dueItem?.emergencyId) {
+            updates['emergencyDues'] = nextEmergencyDues;
+            updates['emergencyAlerts'] = nextEmergencyAlert;
+          }
           tx.update(userRef, updates);
         } else if (method === 'credit') {
           const credit = d?.credit ?? {};
@@ -252,6 +340,10 @@ export default function HomeScreen() {
               updates[`loans.${loanId}.remaining`] = newRem;
             }
           }
+          if (dueItem?.emergencyId) {
+            updates['emergencyDues'] = nextEmergencyDues;
+            updates['emergencyAlerts'] = nextEmergencyAlert;
+          }
           tx.update(userRef, updates);
         } else {
           throw new Error('Unknown payment method');
@@ -260,11 +352,12 @@ export default function HomeScreen() {
 
   // refresh local userData
       const snap = await getDoc(userRef);
-      if (snap.exists()) setUserData(prev => ({ ...prev, ...(snap.data() as any) }));
+      if (snap.exists()) mergeUserData((snap.data() as any) || {});
 
       // remove the paid due from the list
       // remove the paid due from the list; match by label and loanId if present
       setPaymentsDue(prev => prev.filter(p => {
+        if (p.emergencyId && dueItem.emergencyId) return !(p.emergencyId === dueItem.emergencyId);
         if (p.loanId && dueItem.loanId) return !(p.loanId === dueItem.loanId);
         return !(p.label === dueItem.label);
       }));
@@ -454,6 +547,17 @@ export default function HomeScreen() {
       console.warn('Failed to persist seenLearnHint', e);
     }
   };
+
+  const closeDueWallet = () => {
+    if (pendingNextDay && paymentsDue.length > 0) {
+      Alert.alert('Payment required', 'You must pay all dues before moving to the next day.');
+      return;
+    }
+    setShowDueWallet(false);
+    setPaymentsDue([]);
+  };
+
+  const emergencyAlertText = buildEmergencyAlertText(userData?.emergencyDues, userData?.day) || String(userData?.emergencyAlerts ?? '');
 
 
 
@@ -813,15 +917,56 @@ export default function HomeScreen() {
                 // If so, block advancement and open the payments wallet so the player must pay them first.
                 try {
                   const freshSnapBefore = await getDoc(userRef);
-                  const freshBefore = freshSnapBefore.exists() ? (freshSnapBefore.data() as any) : {};
+                  let freshBefore = freshSnapBefore.exists() ? (freshSnapBefore.data() as any) : {};
                   // Build a hypothetical user object representing the next day so getUpcomingDues can compute correctly
                   const currentDayVal = Number(freshBefore.day) || Number(userData.day) || 0;
-                  const hypothetical = { ...freshBefore, day: currentDayVal + 1 };
+                  const nextDayVal = currentDayVal + 1;
+                  let emergencyDues = Array.isArray(freshBefore?.emergencyDues) ? freshBefore.emergencyDues : [];
+                  const hasEmergencyOnOrBeforeNextDay = emergencyDues.some((entry: any) => {
+                    const dueDay = Number(entry?.dueDay) || 0;
+                    return dueDay > 0 && dueDay <= nextDayVal;
+                  });
+
+                  if (!hasEmergencyOnOrBeforeNextDay && Math.random() < (2 / 15)) {
+                    const generatedEmergency = createRandomEmergencyDue(nextDayVal);
+                    emergencyDues = [...emergencyDues, generatedEmergency];
+                    const nextEmergencyAlert = buildEmergencyAlertText(emergencyDues, currentDayVal);
+                    try {
+                      await updateDoc(userRef, {
+                        emergencyDues,
+                        emergencyAlerts: nextEmergencyAlert,
+                      });
+                      freshBefore = {
+                        ...freshBefore,
+                        emergencyDues,
+                        emergencyAlerts: nextEmergencyAlert,
+                      };
+                      setUserData(prev => ({
+                        ...prev,
+                        emergencyDues,
+                        emergencyAlerts: nextEmergencyAlert,
+                      }));
+                    } catch (e) {
+                      console.warn('Failed to save generated emergency due', e);
+                    }
+                  }
+
+                  const hypothetical = {
+                    ...freshBefore,
+                    emergencyDues,
+                    day: nextDayVal,
+                  };
                   const duesNext = getUpcomingDues(hypothetical || {});
                   const dueNext = (duesNext || []).filter((d: any) => Number(d.days) === 0);
                   if (dueNext && dueNext.length > 0) {
                     // enrich amounts for each due using freshBefore data
                     const enriched = dueNext.map((d: any) => {
+                      if (d?.emergencyId) {
+                        return {
+                          ...d,
+                          amount: Number(d.amount) || 100,
+                        };
+                      }
                       // if loan entry present with loanId/amount, use loan monthlyPayment/remaining
                       if (d?.loanId) {
                         const loanEntry = (freshBefore.loans || {})[d.loanId] || {};
@@ -1030,7 +1175,7 @@ export default function HomeScreen() {
           fontFamily: 'Pixel',
           borderColor: '#63372C'
         }}>
-          Emergency Alerts: {userData.emergencyAlerts}
+          Emergency Alerts: {emergencyAlertText || 'None'}
         </Text>
         
         {/* Payments-due wallet modal */}
@@ -1038,7 +1183,7 @@ export default function HomeScreen() {
           visible={showDueWallet}
           transparent={true}
           animationType="slide"
-          onRequestClose={() => setShowDueWallet(false)}
+          onRequestClose={closeDueWallet}
         >
           <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
             <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 16 }}>
@@ -1047,6 +1192,9 @@ export default function HomeScreen() {
                 paymentsDue.map((p, idx) => (
                   <View key={`${p.label}-${idx}`} style={{ marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 8 }}>
                     <Text style={{ fontFamily: 'Pixel', fontSize: 16 }}>{p.label} — ${p.amount}</Text>
+                    {p?.isEmergency && !!p?.message && (
+                      <Text style={{ fontFamily: 'Pixel', fontSize: 12, marginTop: 4 }}>{p.message}</Text>
+                    )}
                     <View style={{ flexDirection: 'row', marginTop: 8 }}>
                       <Pressable onPress={() => setSelectedMethodFor(prev => ({ ...prev, [p.label]: 'debit' }))} style={{ marginRight: 8, padding: 8, backgroundColor: selectedMethodFor[p.label] === 'debit' ? '#c78e71' : '#eee', borderRadius: 6 }}>
                         <Text style={{ fontFamily: 'Pixel' }}>Debit</Text>
@@ -1113,7 +1261,7 @@ export default function HomeScreen() {
               )}
 
               <View style={{ marginTop: 8, flexDirection: 'row', justifyContent: 'flex-end' }}>
-                <Pressable onPress={() => { setShowDueWallet(false); setPaymentsDue([]); }} style={{ marginLeft: 8, padding: 8 }}>
+                <Pressable onPress={closeDueWallet} style={{ marginLeft: 8, padding: 8 }}>
                   <Text style={{ fontFamily: 'Pixel' }}>Close</Text>
                 </Pressable>
               </View>

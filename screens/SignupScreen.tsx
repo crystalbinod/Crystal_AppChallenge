@@ -65,6 +65,7 @@ export default function SignupScreen() {
         lifeStatus:1,
         createdAt: serverTimestamp(),
         emergencyAlerts:null,
+        emergencyDues: [],
         reminders:null,
         day:1,
         // financial maps
