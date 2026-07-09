@@ -1,6 +1,6 @@
 // screens/JobScreen.tsx
 import * as React from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
@@ -9,6 +9,11 @@ import { useAuthRequest } from 'expo-auth-session/providers/google';
 import { collection, doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
+function hasNoJob(job: unknown): boolean {
+  if (job == null) return true;
+  const value = String(job).trim();
+  return value === '' || value.toLowerCase() === 'none';
+}
 
 export default function JobScreen() {
 // make sure your Firestore is initialized
@@ -30,15 +35,29 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
 
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const day = data.day; // make sure this field exists and is a number
+        const day = Number(data.day) || 0;
 
-        // Check the modulus condition
-        if ((day-1) % 15 === 0) {
+        if (data.dead) {
+          Alert.alert('Cannot select job', 'Your character has died.');
+          return false;
+        }
+
+        // No job yet: allow picking a job on any day
+        if (hasNoJob(data.job)) {
           navigation.navigate('JobGenerator');
           return true;
-        } else {
-          console.log('Condition not met');
         }
+
+        // Already has a job: only on scheduled job-selection days
+        if ((day - 1) % 15 === 0) {
+          navigation.navigate('JobGenerator');
+          return true;
+        }
+
+        Alert.alert(
+          'Job selection closed',
+          'You already have a job. New job offers appear every 15 days.'
+        );
       } else {
         console.log('No user document found');
       }

@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import {
   ChatMessage,
@@ -23,6 +24,11 @@ type Props = {
 };
 
 export default function AIChatBot({ userData }: Props) {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+  const panelHeight = isLandscape ? Math.min(220, height - 40) : 380;
+  const panelWidth = isLandscape ? Math.min(280, width * 0.4) : 300;
+
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
@@ -95,15 +101,15 @@ export default function AIChatBot({ userData }: Props) {
     <>
       {!open && (
         <TouchableOpacity
-          style={styles.fab}
+          style={[styles.fab, isLandscape && styles.fabLandscape]}
           onPress={() => setOpen(true)}
           activeOpacity={0.85}
           accessibilityLabel="Open Piggy assistant"
         >
-          <View style={styles.fabBubble}>
+          <View style={[styles.fabBubble, isLandscape && styles.fabBubbleLandscape]}>
             <Image
               source={require('../assets/pig_icon.png')}
-              style={styles.fabImage}
+              style={[styles.fabImage, isLandscape && styles.fabImageLandscape]}
               resizeMode="contain"
             />
           </View>
@@ -116,11 +122,11 @@ export default function AIChatBot({ userData }: Props) {
       {open && (
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.panelWrap}
+          style={[styles.panelWrap, isLandscape && styles.panelWrapLandscape]}
           pointerEvents="box-none"
         >
-          <View style={styles.panel}>
-            <View style={styles.header}>
+          <View style={[styles.panel, { width: panelWidth, height: panelHeight }]}>
+            <View style={[styles.header, isLandscape && styles.headerLandscape]}>
               <View style={styles.headerLeft}>
                 <Image
                   source={require('../assets/pig_icon.png')}
@@ -131,8 +137,9 @@ export default function AIChatBot({ userData }: Props) {
               </View>
               <TouchableOpacity
                 onPress={() => setOpen(false)}
-                style={styles.closeBtn}
+                style={[styles.closeBtn, isLandscape && styles.closeBtnLandscape]}
                 accessibilityLabel="Close chat"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Text style={styles.closeBtnText}>✕</Text>
               </TouchableOpacity>
@@ -209,6 +216,12 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     elevation: 6,
   },
+  fabLandscape: {
+    right: 10,
+    bottom: 10,
+    width: 52,
+    height: 52,
+  },
   fabBubble: {
     width: 64,
     height: 64,
@@ -223,9 +236,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
+  fabBubbleLandscape: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+  },
   fabImage: {
     width: 46,
     height: 46,
+  },
+  fabImageLandscape: {
+    width: 36,
+    height: 36,
   },
   chatBadge: {
     position: 'absolute',
@@ -254,9 +276,11 @@ const styles = StyleSheet.create({
     bottom: 12,
     zIndex: 1000,
   },
+  panelWrapLandscape: {
+    bottom: 8,
+    right: 8,
+  },
   panel: {
-    width: 300,
-    height: 380,
     backgroundColor: '#F2E5D7',
     borderRadius: 16,
     borderWidth: 4,
@@ -276,6 +300,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  headerLandscape: {
+    paddingVertical: 6,
+  },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -293,6 +320,13 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     padding: 4,
+  },
+  closeBtnLandscape: {
+    padding: 8,
+    minWidth: 36,
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   closeBtnText: {
     color: '#ffd27a',
