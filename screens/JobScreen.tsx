@@ -105,14 +105,14 @@ export default function JobScreen() {
           return true;
         }
 
-        if ((day - 1) % 15 === 0) {
+        if ((day - 1) % 10 === 0) {
           navigation.navigate('JobGenerator');
           return true;
         }
 
         Alert.alert(
           'Job selection closed',
-          'You already have a job. New job offers appear every 15 days.'
+          'You already have a job. New job offers appear every 10 days.'
         );
       } else {
         console.log('No user document found');

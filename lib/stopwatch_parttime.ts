@@ -1,5 +1,5 @@
 // lib/stopwatch_parttime.ts
-// Separate in-memory stopwatch for the Part-Time flow (MineSweeper/Memory/Pong/Whack-A-Mole).
+// Separate in-memory stopwatch for the Part-Time flow (MineSweeper/Memory/Finance Quiz/Whack-A-Mole).
 // Pure-JS implementation with a 10-minute automatic stop.
 
 type Subscriber = (ms: number, running: boolean) => void;

@@ -71,17 +71,14 @@ export default function HomeScreen() {
         }
         if (!mounted) return;
         const data = snap.data() || {};
-        // Pick fields you want; this just spreads everything
-        setUserData(prev => ({ ...prev, 
+        setUserData(prev => ({ ...prev,
           ...data,
           displayName: data.displayName ?? '',
           job: data.job ?? '',
           day: data.day ?? '',
           reminders: data.reminders ?? '',
           emergencyAlerts: data.emergencyAlerts ?? '',
-         
-         }));
-        // show one-time learn hint if user hasn't seen it yet
+        }));
         try {
           if (!data?.seenLearnHint) setShowLearnHint(true);
         } catch (e) { /* noop */ }
@@ -217,6 +214,49 @@ export default function HomeScreen() {
     return dues;
   };
 
+  const dueSettlementKey = (label: string, loanId?: string) => {
+    if (loanId) return `loan:${loanId}`;
+    const l = (label || '').toLowerCase();
+    if (l.includes('rent')) return 'rent';
+    if (l.includes('credit')) return 'credit';
+    if (l.includes('utilities')) return 'utilities';
+    if (l.includes('tax')) return 'taxes';
+    return label;
+  };
+
+  const enrichDueAmounts = (dues: any[], uData: { [k: string]: any }) => {
+    return dues.map((d: any) => {
+      if (d?.loanId) {
+        const loanEntry = (uData.loans || {})[d.loanId] || {};
+        const amt = Number(loanEntry?.monthlyPayment) || Number(loanEntry?.remaining) || 0;
+        return { ...d, amount: amt };
+      }
+      let amount = 0;
+      const creditMap = uData?.credit || uData;
+      if ((d.label || '').toLowerCase().includes('credit')) {
+        amount = Number(creditMap?.creditCardbill || creditMap?.creditCardBill || 0) || 0;
+      } else if ((d.label || '').toLowerCase().includes('rent')) {
+        amount = Number(uData?.rentAmount || 200);
+      } else if ((d.label || '').toLowerCase().includes('utilities')) {
+        amount = Number(uData?.utilitiesAmount || 40);
+      } else if ((d.label || '').toLowerCase().includes('tax')) {
+        amount = Number(uData?.taxAmount || 100);
+      }
+      return { ...d, amount };
+    });
+  };
+
+  // Bills due on the current day that have not been paid yet this day
+  const getUnpaidDuesToday = (uData: { [k: string]: any }) => {
+    const day = Number(uData?.day) || 0;
+    const settled = uData?.paymentsSettled || {};
+    const dueToday = (getUpcomingDues(uData) || []).filter((d: any) => Number(d.days) === 0);
+    return dueToday.filter((d: any) => {
+      const key = dueSettlementKey(d.label, d.loanId);
+      return Number(settled[key]) !== day;
+    });
+  };
+
   // state for payments-due wallet modal
   const [showDueWallet, setShowDueWallet] = useState(false);
   const [paymentsDue, setPaymentsDue] = useState<Array<any>>([]);
@@ -234,8 +274,27 @@ export default function HomeScreen() {
     }
     const userRef = doc(db, 'users', u.uid);
     const amount = typeof amountOverride === 'number' ? amountOverride : (Number(dueItem.amount) || 0);
-    if (amount <= 0) {
+    if (amount < 0) {
       Alert.alert('Nothing to pay', 'This due has no amount.');
+      return;
+    }
+    const loanId = dueItem?.loanId ?? null;
+    if (amount === 0) {
+      try {
+        const snap = await getDoc(userRef);
+        const dayVal = Number(snap.data()?.day) || 0;
+        await updateDoc(userRef, {
+          [`paymentsSettled.${dueSettlementKey(dueItem?.label || '', loanId)}`]: dayVal,
+        });
+        if (snap.exists()) setUserData((prev) => ({ ...prev, ...(snap.data() as any) }));
+        setPaymentsDue((prev) => prev.filter((p) => {
+          if (p.loanId && dueItem.loanId) return !(p.loanId === dueItem.loanId);
+          return !(p.label === dueItem.label);
+        }));
+        Alert.alert('Recorded', `${dueItem.label} marked as paid ($0 due).`);
+      } catch (e: any) {
+        Alert.alert('Payment failed', e?.message || String(e));
+      }
       return;
     }
     try {
@@ -245,7 +304,6 @@ export default function HomeScreen() {
         const d = s.data() as any;
         const liquid = d?.liquidMoney ?? { total: 0, checkingAccount: {}, savingsAccount: {} };
 
-        const loanId = dueItem?.loanId ?? null;
         if (method === 'debit') {
           if (!accountKey) throw new Error('No checking account selected');
           const prevTotal = Number(liquid.total) || 0;
@@ -276,6 +334,8 @@ export default function HomeScreen() {
               updates[`loans.${loanId}.remaining`] = newRem;
             }
           }
+          const dayVal = Number(d?.day) || 0;
+          updates[`paymentsSettled.${dueSettlementKey(dueItem?.label || '', loanId)}`] = dayVal;
           tx.update(userRef, updates);
         } else if (method === 'savings') {
           if (!accountKey) throw new Error('No savings account selected');
@@ -307,6 +367,8 @@ export default function HomeScreen() {
               updates[`loans.${loanId}.remaining`] = newRem;
             }
           }
+          const dayVal = Number(d?.day) || 0;
+          updates[`paymentsSettled.${dueSettlementKey(dueItem?.label || '', loanId)}`] = dayVal;
           tx.update(userRef, updates);
         } else if (method === 'credit') {
           const credit = d?.credit ?? {};
@@ -324,6 +386,8 @@ export default function HomeScreen() {
               updates[`loans.${loanId}.remaining`] = newRem;
             }
           }
+          const dayVal = Number(d?.day) || 0;
+          updates[`paymentsSettled.${dueSettlementKey(dueItem?.label || '', loanId)}`] = dayVal;
           tx.update(userRef, updates);
         } else {
           throw new Error('Unknown payment method');
@@ -696,6 +760,33 @@ export default function HomeScreen() {
                 const userSnap = await getDoc(userRef);
                 const userData = userSnap.exists() ? userSnap.data() : {};
 
+                // Block advancing until all bills due TODAY are paid (e.g. can't leave day 15 unpaid).
+                let freshUserData = userData || {};
+                let unpaidToday = getUnpaidDuesToday(freshUserData);
+                if (unpaidToday.length > 0) {
+                  const enriched = enrichDueAmounts(unpaidToday, freshUserData);
+                  const zeroDue = enriched.filter((p) => Number(p.amount) <= 0);
+                  if (zeroDue.length > 0) {
+                    const dayVal = Number(freshUserData.day) || 0;
+                    const settleUpdates: Record<string, number> = {};
+                    zeroDue.forEach((p) => {
+                      settleUpdates[`paymentsSettled.${dueSettlementKey(p.label, p.loanId)}`] = dayVal;
+                    });
+                    await updateDoc(userRef, settleUpdates);
+                    const refreshed = await getDoc(userRef);
+                    freshUserData = refreshed.exists() ? (refreshed.data() as any) : freshUserData;
+                    unpaidToday = getUnpaidDuesToday(freshUserData);
+                  }
+                }
+                if (unpaidToday.length > 0) {
+                  setPaymentsDue(enrichDueAmounts(unpaidToday, freshUserData));
+                  setSelectedAccountFor({});
+                  setSelectedMethodFor({});
+                  setPendingNextDay(true);
+                  setShowDueWallet(true);
+                  return;
+                }
+
                 // --- FOOD / STARVATION LOGIC ---
                 // Every time Next Day is pressed, subtract 2 from `food`.
                 // Track consecutive days at 0 with `foodZeroDays`. If the user
@@ -849,53 +940,7 @@ export default function HomeScreen() {
                   console.warn('Error while computing/updating jobDone', e);
                 }
 
-
-                // Before advancing the day, check if any dues will be due on the upcoming day.
-                // If so, block advancement and open the payments wallet so the player must pay them first.
-                try {
-                  const freshSnapBefore = await getDoc(userRef);
-                  const freshBefore = freshSnapBefore.exists() ? (freshSnapBefore.data() as any) : {};
-                  // Build a hypothetical user object representing the next day so getUpcomingDues can compute correctly
-                  const currentDayVal = Number(freshBefore.day) || Number(userData.day) || 0;
-                  const hypothetical = { ...freshBefore, day: currentDayVal + 1 };
-                  const duesNext = getUpcomingDues(hypothetical || {});
-                  const dueNext = (duesNext || []).filter((d: any) => Number(d.days) === 0);
-                  if (dueNext && dueNext.length > 0) {
-                    // enrich amounts for each due using freshBefore data
-                    const enriched = dueNext.map((d: any) => {
-                      // if loan entry present with loanId/amount, use loan monthlyPayment/remaining
-                      if (d?.loanId) {
-                        const loanEntry = (freshBefore.loans || {})[d.loanId] || {};
-                        const amt = Number(loanEntry?.monthlyPayment) || Number(loanEntry?.remaining) || 0;
-                        return { ...d, amount: amt };
-                      }
-                      let amount = 0;
-                      const creditMap = freshBefore?.credit || freshBefore;
-                      if ((d.label || '').toLowerCase().includes('credit')) {
-                        amount = Number(creditMap?.creditCardbill || creditMap?.creditCardBill || 0) || 0;
-                      } else if ((d.label || '').toLowerCase().includes('rent')) {
-                        amount = Number(freshBefore?.rentAmount || 200);
-                      } else if ((d.label || '').toLowerCase().includes('utilities')) {
-                        amount = Number(freshBefore?.utilitiesAmount || 40);
-                      } else if ((d.label || '').toLowerCase().includes('tax')) {
-                        amount = Number(freshBefore?.taxAmount || 100);
-                      }
-                      return { ...d, amount };
-                    });
-
-                    setPaymentsDue(enriched);
-                    setSelectedAccountFor({});
-                    setSelectedMethodFor({});
-                    setPendingNextDay(true);
-                    setShowDueWallet(true);
-                    // block advancing the day for now
-                    return;
-                  }
-                } catch (e) {
-                  console.warn('Failed to compute dues for next day', e);
-                }
-
-                // No blocking dues found — proceed to increment day and payout as before
+                // No unpaid bills today — proceed to increment day and payout
                 try {
                   await updateDoc(userRef, { day: increment(1) });
                 } catch (e) {
@@ -1073,7 +1118,7 @@ export default function HomeScreen() {
         <Text style={{
           margin: 7,
           flex: 1,
-          backgroundColor: '#63372C', 
+          backgroundColor: '#63372C',
           marginVertical: 7,
           marginRight: 10,
           borderRadius: 10,
@@ -1089,11 +1134,15 @@ export default function HomeScreen() {
           visible={showDueWallet}
           transparent={true}
           animationType="slide"
-          onRequestClose={() => setShowDueWallet(false)}
+          onRequestClose={() => {
+            if (!pendingNextDay) setShowDueWallet(false);
+          }}
         >
           <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
             <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 16 }}>
-              <Text style={{ fontFamily: 'Pixel', fontWeight: '700', fontSize: 18, marginBottom: 8 }}>Payments due today</Text>
+              <Text style={{ fontFamily: 'Pixel', fontWeight: '700', fontSize: 18, marginBottom: 8 }}>
+                {pendingNextDay ? 'Pay bills before next day' : 'Payments due today'}
+              </Text>
               {paymentsDue && paymentsDue.length > 0 ? (
                 paymentsDue.map((p, idx) => (
                   <View key={`${p.label}-${idx}`} style={{ marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 8 }}>
@@ -1164,9 +1213,17 @@ export default function HomeScreen() {
               )}
 
               <View style={{ marginTop: 8, flexDirection: 'row', justifyContent: 'flex-end' }}>
-                <Pressable onPress={() => { setShowDueWallet(false); setPaymentsDue([]); }} style={{ marginLeft: 8, padding: 8 }}>
-                  <Text style={{ fontFamily: 'Pixel' }}>Close</Text>
-                </Pressable>
+                {!pendingNextDay && (
+                  <Pressable
+                    onPress={() => {
+                      setShowDueWallet(false);
+                      setPaymentsDue([]);
+                    }}
+                    style={{ marginLeft: 8, padding: 8 }}
+                  >
+                    <Text style={{ fontFamily: 'Pixel' }}>Close</Text>
+                  </Pressable>
+                )}
               </View>
             </View>
           </View>

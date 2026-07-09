@@ -9,12 +9,12 @@ import JobScreen from '../screens/JobScreen';
 
 import BankScreen from '../screens/BankScreen';
 import LearnScreen from '../screens/LearnScreen';
-import snakegame from '../screens/snakegame';
+import BudgetSorterScreen from '../screens/BudgetSorterScreen';
 import MineSweeperScreen from '../screens/MineSweeperScreen';
 import twentyScreen from '../screens/twentyScreen';
 import SignupScreen from '../screens/SignupScreen';
 import MemoryScreen from '../screens/MemoryScreen';
-import PongScreen from '../screens/PongScreen';
+import FinanceQuizScreen from '../screens/FinanceQuizScreen';
 import CupPongScreen from '../screens/CupPongScreen';
 import MoleScreen from '../screens/MoleScreen';
 import FlappyBirdScreen from '../screens/FlappyBirdScreen';
@@ -42,11 +42,11 @@ export type RootStackParamList = {
   Bank: undefined;
   Learn: undefined;
   MineSweeper:  undefined;
-  snakegame:undefined;
+  BudgetSorter: undefined;
   Signup:undefined;
   2048:undefined;
   Memory:undefined;
-  Pong:undefined;
+  FinanceQuiz: undefined;
   CupPong:undefined;
   WhackAMole:undefined;
   FlappyBird:undefined;
@@ -103,11 +103,11 @@ export default function RootNavigator() {
       <Stack.Screen name="Bank" component={BankScreen} />
       <Stack.Screen name="Learn" component={LearnScreen} />
       <Stack.Screen name="MineSweeper" component={MineSweeperScreen} />
-      <Stack.Screen name="snakegame" component={snakegame} />
+      <Stack.Screen name="BudgetSorter" component={BudgetSorterScreen} options={{ title: 'Budget Sorter' }} />
       <Stack.Screen name="Signup" component={SignupScreen} />
       <Stack.Screen name="2048" component={twentyScreen} />
       <Stack.Screen name="Memory" component={MemoryScreen} />
-      <Stack.Screen name="Pong" component={PongScreen} />
+      <Stack.Screen name="FinanceQuiz" component={FinanceQuizScreen} options={{ title: 'Finance Quiz' }} />
       <Stack.Screen name="Cup-Pong" component={CupPongScreen} />
       <Stack.Screen name="Whack-A-Mole" component={MoleScreen} />
       <Stack.Screen name="FlappyBird" component={FlappyBirdScreen} />

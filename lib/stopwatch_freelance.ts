@@ -1,5 +1,5 @@
 // lib/stopwatch_freelance.ts
-// Separate in-memory stopwatch for the Freelance flow (Flappy/CupPong/Snake).
+// Separate in-memory stopwatch for the Freelance flow (Budget Sorter/CupPong/Flappy).
 // Implementation mirrors lib/stopwatch.ts but keeps independent state.
 
 type Subscriber = (ms: number, running: boolean) => void;

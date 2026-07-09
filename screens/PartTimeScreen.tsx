@@ -98,7 +98,7 @@ export default function PartTimeScreen() {
     <>
       <GameButton label="MineSweeper" btnW={btnW} btnH={btnH} onPress={() => startGame('MineSweeper')} />
       <GameButton label="Memory Game" btnW={btnW} btnH={btnH} onPress={() => startGame('Memory')} />
-      <GameButton label="Pong" btnW={btnW} btnH={btnH} onPress={() => startGame('Pong')} />
+      <GameButton label="Finance Quiz" btnW={btnW} btnH={btnH} onPress={() => startGame('FinanceQuiz')} />
       <GameButton label="Whack-A-Mole" btnW={btnW} btnH={btnH} onPress={() => startGame('Whack-A-Mole')} />
     </>
   );
@@ -128,7 +128,7 @@ export default function PartTimeScreen() {
             <GameButton label="Memory Game" btnW={btnW} btnH={btnH} onPress={() => startGame('Memory')} />
           </View>
           <View style={[styles.landscapeCol, { marginLeft: 48 }]}>
-            <GameButton label="Pong" btnW={btnW} btnH={btnH} onPress={() => startGame('Pong')} />
+            <GameButton label="Finance Quiz" btnW={btnW} btnH={btnH} onPress={() => startGame('FinanceQuiz')} />
             <GameButton label="Whack-A-Mole" btnW={btnW} btnH={btnH} onPress={() => startGame('Whack-A-Mole')} />
           </View>
         </View>
