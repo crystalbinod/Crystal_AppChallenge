@@ -1004,10 +1004,20 @@ export default function HomeScreen() {
           }}
         >
           <Text style={{
-            color: '#000000ff',
-            fontFamily: 'Pixel',
+            fontFamily: 'Windows',
+            fontSize: 16,
+            color: '#C97D60',
+            marginBottom: 4,
           }}>
-            Reminders: {userData.reminders}
+            Reminders
+          </Text>
+          <Text style={{
+            color: '#fff8f3',
+            fontFamily: 'LazyDaze',
+            fontSize: 15,
+            lineHeight: 22,
+          }}>
+            {userData.reminders || 'No reminders yet.'}
           </Text>
           {
             // compute quick due badge when something is due within 5 days
@@ -1018,7 +1028,7 @@ export default function HomeScreen() {
                 if (!soon || soon.length === 0) return null;
                 const parts = soon.map(d => d.days === 0 ? `${d.label} today` : `${d.label} in ${d.days}d`);
                 return (
-                  <Text style={{ color: '#fff', marginTop: 6, fontFamily: 'Pixel', fontSize: 12 }}>
+                  <Text style={{ color: '#fff8f3', marginTop: 6, fontFamily: 'LazyDaze', fontSize: 15, lineHeight: 22 }}>
                     Due: {parts.join(', ')}
                   </Text>
                 );

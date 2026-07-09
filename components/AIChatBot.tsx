@@ -16,15 +16,20 @@ import {
   ChatMessage,
   getChatResponse,
   getWelcomeMessage,
+  getNextDayNudgeMessage,
 } from '../lib/chatbot';
 import { askGemini, hasGeminiApiKey } from '../lib/gemini';
+import { hasWorkActivity } from '../lib/workActivity';
 import SpeakButton from './SpeakButton';
 
 type Props = {
   userData?: { [key: string]: any };
+  enableNextDayReminders?: boolean;
 };
 
-export default function AIChatBot({ userData }: Props) {
+const NEXT_DAY_REMINDER_MS = 2 * 60 * 1000;
+
+export default function AIChatBot({ userData, enableNextDayReminders = true }: Props) {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
   const panelHeight = isLandscape ? Math.min(220, height - 40) : 380;
@@ -34,7 +39,30 @@ export default function AIChatBot({ userData }: Props) {
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [nudgeVisible, setNudgeVisible] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const nudgeHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!enableNextDayReminders) return undefined;
+
+    const showNudge = () => {
+      if (open || !hasWorkActivity()) return;
+      setNudgeVisible(true);
+      if (nudgeHideTimer.current) clearTimeout(nudgeHideTimer.current);
+      nudgeHideTimer.current = setTimeout(() => setNudgeVisible(false), 12000);
+    };
+
+    const interval = setInterval(showNudge, NEXT_DAY_REMINDER_MS);
+    return () => {
+      clearInterval(interval);
+      if (nudgeHideTimer.current) clearTimeout(nudgeHideTimer.current);
+    };
+  }, [enableNextDayReminders, open]);
+
+  useEffect(() => {
+    if (open) setNudgeVisible(false);
+  }, [open]);
 
   useEffect(() => {
     if (open && messages.length === 0) {
@@ -101,7 +129,17 @@ export default function AIChatBot({ userData }: Props) {
   return (
     <>
       {!open && (
-        <TouchableOpacity
+        <>
+          {nudgeVisible && enableNextDayReminders ? (
+            <TouchableOpacity
+              style={[styles.nudgeBubble, isLandscape && styles.nudgeBubbleLandscape]}
+              onPress={() => setNudgeVisible(false)}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.nudgeText}>{getNextDayNudgeMessage()}</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity
           style={[styles.fab, isLandscape && styles.fabLandscape]}
           onPress={() => setOpen(true)}
           activeOpacity={0.85}
@@ -118,6 +156,7 @@ export default function AIChatBot({ userData }: Props) {
             <Text style={styles.chatBadgeText}>...</Text>
           </View>
         </TouchableOpacity>
+        </>
       )}
 
       {open && (
@@ -225,6 +264,30 @@ const styles = StyleSheet.create({
     bottom: 10,
     width: 52,
     height: 52,
+  },
+  nudgeBubble: {
+    position: 'absolute',
+    right: 12,
+    bottom: 92,
+    maxWidth: 240,
+    backgroundColor: '#fff8f3',
+    borderWidth: 3,
+    borderColor: '#63372C',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    zIndex: 999,
+    elevation: 5,
+  },
+  nudgeBubbleLandscape: {
+    bottom: 72,
+    maxWidth: 220,
+  },
+  nudgeText: {
+    fontFamily: 'LazyDaze',
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#63372C',
   },
   fabBubble: {
     width: 64,

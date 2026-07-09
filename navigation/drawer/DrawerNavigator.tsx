@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { View } from 'react-native';
 
 // import the drawer navigator creator from React Navigation
 // this lets you create a sidebarnavigation menu
@@ -8,6 +9,9 @@ import {
   DrawerItemList,
 } from '@react-navigation/drawer';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { auth, db } from '../../lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
+import AIChatBot from '../../components/AIChatBot';
 
 // Import another navigator (Tabs) — this is to access the homescreen and profile screen in tabs
 // so the tabs navigator is wrapped in the drawer navigator
@@ -56,8 +60,20 @@ function BankDrawerContent(props: any) {
 
 export default function DrawerNavigator() {
   const insets = useSafeAreaInsets();
+  const [userData, setUserData] = React.useState<{ [key: string]: any }>({});
+
+  React.useEffect(() => {
+    const u = auth.currentUser;
+    if (!u) return;
+    const ref = doc(db, 'users', u.uid);
+    const unsub = onSnapshot(ref, (snap) => {
+      setUserData(snap.exists() ? snap.data() : {});
+    });
+    return () => unsub();
+  }, []);
 
   return (
+    <View style={{ flex: 1 }}>
     <Drawer.Navigator
     drawerContent={(props) => <BankDrawerContent {...props} />}
     screenOptions={{
@@ -99,5 +115,7 @@ export default function DrawerNavigator() {
       <Drawer.Screen name="Loan" component={LoanScreen}  />
       <Drawer.Screen name="Savings" component={SavingsScreen} />
     </Drawer.Navigator>
+    <AIChatBot userData={userData} />
+    </View>
   );
 }

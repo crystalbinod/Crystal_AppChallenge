@@ -1,16 +1,55 @@
-// screens/ParttimeScreen.tsx
-// screens/JobScreen.tsx
+// screens/PartTimeScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, Image } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useFonts } from 'expo-font';
-import { auth, db } from '../lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
 import PartTimeStopwatch from '../lib/stopwatch_parttime';
 
-export default function JobScreen() {
+type GameButtonProps = {
+  label: string;
+  onPress: () => void;
+  btnW: number;
+  btnH: number;
+};
+
+function GameButton({ label, onPress, btnW, btnH }: GameButtonProps) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={{ width: btnW, minHeight: btnH, alignItems: 'center', marginBottom: 20 }}
+    >
+      <Image
+        source={require('../assets/button.png')}
+        style={{ width: btnW, height: btnH, position: 'absolute', alignSelf: 'center' }}
+      />
+      <Text style={{
+        paddingTop: btnH * 0.3,
+        marginBottom: btnH * 0.1,
+        color: '#63372C',
+        fontSize: 18,
+        fontWeight: 'bold',
+        fontFamily: 'Pixel',
+        textAlign: 'center',
+      }}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+export default function PartTimeScreen() {
   const [fontsLoaded] = useFonts({
     'LazyDaze': require('../assets/ATP-Lazy Daze.ttf'),
     'Windows': require('../assets/windows-bold.ttf'),
@@ -19,10 +58,15 @@ export default function JobScreen() {
   });
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const isPortrait = height > width;
+  const btnW = isPortrait ? Math.min(260, width - 64) : 220;
+  const btnH = isPortrait ? 80 : 100;
 
-  // display the part-time stopwatch on this parent screen
   const [elapsedMs, setElapsedMs] = useState<number>(0);
   const [swRunning, setSwRunning] = useState(false);
+
   useEffect(() => {
     const unsub = PartTimeStopwatch.subscribe((ms: number, running: boolean) => {
       setElapsedMs(ms);
@@ -38,7 +82,6 @@ export default function JobScreen() {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Pause the part-time stopwatch when returning to this parent screen
   useEffect(() => {
     const unsub = navigation.addListener('focus', () => {
       try { PartTimeStopwatch.pause(); } catch (e) { /* noop */ }
@@ -46,114 +89,83 @@ export default function JobScreen() {
     return unsub;
   }, [navigation]);
 
+  const startGame = (screen: keyof RootStackParamList) => {
+    PartTimeStopwatch.start();
+    navigation.navigate(screen);
+  };
+
+  const games = (
+    <>
+      <GameButton label="MineSweeper" btnW={btnW} btnH={btnH} onPress={() => startGame('MineSweeper')} />
+      <GameButton label="Memory Game" btnW={btnW} btnH={btnH} onPress={() => startGame('Memory')} />
+      <GameButton label="Pong" btnW={btnW} btnH={btnH} onPress={() => startGame('Pong')} />
+      <GameButton label="Whack-A-Mole" btnW={btnW} btnH={btnH} onPress={() => startGame('Whack-A-Mole')} />
+    </>
+  );
+
   return (
-    <View style={{ 
-      flex: 1, 
-      backgroundColor: '#F2E5D7', 
-      justifyContent: 'center', 
-      alignItems: 'center' 
-    }}>
-      <Text style={{
-        fontSize: 36,
-        fontFamily: 'Windows',
-        fontWeight: 'bold',
-        color: '#C97D60',
-        marginBottom: 40
-      }}>
-        Pick a Job
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{
+        paddingTop: insets.top + 16,
+        paddingBottom: insets.bottom + 40,
+        paddingHorizontal: 16,
+        alignItems: 'center',
+      }}
+      showsVerticalScrollIndicator
+    >
+      <Text style={styles.title}>Pick a Job</Text>
+      <Text style={styles.session}>
+        Session: {formatTime(elapsedMs)} {swRunning ? '(running)' : '(paused)'}
       </Text>
 
-  <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>Session: {formatTime(elapsedMs)} {swRunning ? '(running)' : '(paused)'}</Text>
-<View style={{flex:1,
-    flexDirection:'row'}}>
-        <View style={{marginRight:40}}> 
-            <TouchableOpacity
-        onPress= {() => { PartTimeStopwatch.start(); (navigation as any).navigate('MineSweeper'); }}
-        activeOpacity={0.7}
-      >
-        <Image 
-          source={require('../assets/button.png')}
-          style={{ width: 240, height: 100, position: 'absolute', alignSelf: 'center' }}
-        />
-        <Text style={{
-          paddingTop: 30,
-          marginBottom: 40,
-          color: '#63372C',
-          fontSize: 20,
-          fontWeight: "bold",
-          fontFamily: "Pixel",
-          alignSelf: 'center',  
-        }}>
-          MineSweeper 
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress= {() => { PartTimeStopwatch.start(); (navigation as any).navigate('Memory'); }}
-        activeOpacity={0.7}
-      >
-        <Image 
-          source={require('../assets/button.png')}
-          style={{ width: 240, height: 100, position: 'absolute', alignSelf: 'center' }}
-        />
-        <Text style={{
-          paddingTop: 30,
-          marginBottom: 30,
-          color: '#63372C',
-          fontSize: 20,
-          fontWeight: "bold",
-          fontFamily: "Pixel",
-          alignSelf: 'center', 
-        }}>
-          Memory Game 
-        </Text>
-      </TouchableOpacity>
+      {isPortrait ? (
+        <View style={styles.portraitStack}>{games}</View>
+      ) : (
+        <View style={styles.landscapeGrid}>
+          <View style={styles.landscapeCol}>
+            <GameButton label="MineSweeper" btnW={btnW} btnH={btnH} onPress={() => startGame('MineSweeper')} />
+            <GameButton label="Memory Game" btnW={btnW} btnH={btnH} onPress={() => startGame('Memory')} />
+          </View>
+          <View style={[styles.landscapeCol, { marginLeft: 48 }]}>
+            <GameButton label="Pong" btnW={btnW} btnH={btnH} onPress={() => startGame('Pong')} />
+            <GameButton label="Whack-A-Mole" btnW={btnW} btnH={btnH} onPress={() => startGame('Whack-A-Mole')} />
+          </View>
         </View>
-        <View>
-        <TouchableOpacity
-        onPress= {() => { PartTimeStopwatch.start(); (navigation as any).navigate('Pong'); }}
-        activeOpacity={0.7}
-      >
-        <Image 
-          source={require('../assets/button.png')}
-          style={{ width: 240, height: 100, position: 'absolute', alignSelf: 'center' }}
-        />
-        <Text style={{
-          paddingTop: 30,
-          marginBottom: 40,
-          color: '#63372C',
-          fontSize: 20,
-          fontWeight: "bold",
-          fontFamily: "Pixel",
-          alignSelf: 'center',
-        }}>
-          Pong
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress= {() => { PartTimeStopwatch.start(); (navigation as any).navigate('Whack-A-Mole'); }}
-        activeOpacity={0.7}
-      >
-        <Image 
-          source={require('../assets/button.png')}
-          style={{ width: 240, height: 100, position: 'absolute', alignSelf: 'center' }}
-        />
-        <Text style={{
-          paddingTop: 30,
-          marginBottom: 30,
-          color: '#63372C',
-          fontSize: 20,
-          fontWeight: "bold",
-          fontFamily: "Pixel",
-          alignSelf: 'center', 
-        }}>
-          Whack-A-Mole
-        </Text>
-      </TouchableOpacity>
-        </View>
-    </View>
-      {/* Part-Time Button */}
-      
-      
-    </View>
+      )}
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F2E5D7',
+  },
+  title: {
+    fontSize: 36,
+    fontFamily: 'Windows',
+    fontWeight: 'bold',
+    color: '#C97D60',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  session: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  portraitStack: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  landscapeGrid: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  landscapeCol: {
+    alignItems: 'center',
+  },
+});

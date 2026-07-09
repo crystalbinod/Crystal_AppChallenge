@@ -8,12 +8,18 @@ import { auth, db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
 
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const screenWidth= useWindowDimensions().width
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const isPortrait = height > width;
+  const loginCardMinHeight = isPortrait ? 210 : 150;
+  const statusCardMinHeight = isPortrait ? 130 : 300;
+  const financialCardMinHeight = isPortrait ? 220 : 300;
    // Keep all user fields in a single object so UI + Firestore stay in sync.
   const [userData, setUserData] = useState<{ [k: string]: any }>({
     displayName: '',
@@ -121,20 +127,56 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
     input: {
       height: 30,
-      minWidth:230,
+      minWidth: isPortrait ? width - 80 : 230,
       paddingHorizontal: 5,
       marginHorizontal: 8,
       borderWidth: 2,
-      fontSize:15,
-      fontFamily:'Pixel',
-      backgroundColor:'#C97D60',
-      color:'#080808ff',
-      borderRadius:10,
-      borderColor:"#080808ff"},
-    scroll:{
-      flex: 1, 
+      fontSize: 15,
+      fontFamily: 'Pixel',
+      backgroundColor: '#C97D60',
+      color: '#080808ff',
+      borderRadius: 10,
+      borderColor: '#080808ff',
+    },
+    scroll: {
+      flex: 1,
       backgroundColor: '#F2E5D7',
-      flexDirection: 'space-evenly'
+    },
+    content: {
+      paddingTop: 16,
+      paddingHorizontal: isPortrait ? 12 : 10,
+      paddingBottom: 24,
+    },
+    columns: {
+      flex: 1,
+      backgroundColor: '#F2E5D7',
+      flexDirection: isPortrait ? 'column' : 'row',
+    },
+    leftCol: {
+      flex: isPortrait ? undefined : 1.8,
+      backgroundColor: '#F2E5D7',
+      marginVertical: isPortrait ? 8 : 20,
+      marginLeft: isPortrait ? 0 : 10,
+      marginRight: isPortrait ? 0 : 15,
+    },
+    rightCol: {
+      flex: isPortrait ? undefined : 0.9,
+      backgroundColor: '#F2E5D7',
+      marginVertical: isPortrait ? 8 : 20,
+      marginRight: isPortrait ? 0 : 10,
+    },
+    card: {
+      backgroundColor: '#63372C',
+      borderRadius: 25,
+      paddingBottom: 12,
+    },
+    cardTitle: {
+      fontSize: 15,
+      color: '#C97D60',
+      fontFamily: 'Pixel',
+      fontWeight: 'bold',
+      margin: 5,
+      marginLeft: 17,
     },
     text:{
       marginLeft:17,
@@ -175,219 +217,115 @@ const styles = StyleSheet.create({
 
 
   return (
-    // Center the content in the screen
-    <ScrollView style={styles.scroll}>
-                
-                
-                <View style={{ 
-            flex: 1, 
-            backgroundColor: '#F2E5D7',
-            flexDirection:"row"
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 },
+      ]}
+    >
+      <View style={styles.columns}>
+        <View style={styles.leftCol}>
+          <View style={[styles.card, { minHeight: loginCardMinHeight }]}>
+            <Text style={styles.cardTitle}>login info:</Text>
+            <Text style={styles.text}>
+              Name:
+              <TextInput
+                placeholder="name?"
+                onChangeText={(t) => handleChange('displayName', t)}
+                value={userData.displayName}
+                style={styles.input}
+              />
+            </Text>
+
+            <Text style={styles.text}>
+              username:
+              <Text style={styles.value}>{userData.username}</Text>
+            </Text>
+
+            <Text style={styles.text}>
+              password:
+              <TextInput
+                placeholder="password?"
+                onChangeText={(t) => handleChange('password', t)}
+                value={userData.password}
+                style={styles.input}
+              />
+            </Text>
+          </View>
+
+          <View style={[styles.card, { minHeight: statusCardMinHeight, marginTop: 10 }]}>
+            <Text style={styles.cardTitle}>status:</Text>
+            <Text style={styles.text}>
+              job:
+              <Text style={styles.value}>{userData.job}</Text>
+            </Text>
+            <Text style={styles.text}>
+              housing:
+              <Text style={styles.value}>{userData.housing}</Text>
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.rightCol}>
+          <View style={[styles.card, { minHeight: financialCardMinHeight, borderRadius: isPortrait ? 25 : 15 }]}>
+            <Text style={styles.cardTitle}>Financial Info:</Text>
+            <Text style={styles.text}>
+              food:
+              <Text style={styles.value}>{userData.food}</Text>
+            </Text>
+            <Text style={styles.text}>
+              utilities:
+              <Text style={styles.value}>{userData.utilities}</Text>
+            </Text>
+            <Text style={styles.text}>
+              credit score:
+              <Text style={styles.value}>
+                {userData?.credit?.creditScore ?? userData?.creditScore ?? '—'}
+              </Text>
+            </Text>
+            <Text style={styles.text}>
+              credit bill:
+              <Text style={styles.value}>
+                {userData?.credit?.creditCardbill ?? userData?.credit?.creditCardBill ?? userData?.creditCardBill ?? '—'}
+              </Text>
+            </Text>
+            <Text style={styles.text}>
+              credit limit:
+              <Text style={styles.value}>
+                {userData?.credit?.creditLimit ?? userData?.creditCardLimit ?? '—'}
+              </Text>
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <TouchableOpacity
+        onPress={async () => {
+          try {
+            await signOut(auth);
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          } catch (err) {
+            console.error('Sign-out error', err);
+          }
+        }}
+        activeOpacity={0.7}
+        style={{ alignSelf: 'center', marginTop: 16 }}
+      >
+        <ImageBackground
+          source={require('../assets/button.png')}
+          style={{ width: 200, height: 100, justifyContent: 'center', alignItems: 'center' }}
+        >
+          <Text style={{
+            color: '#63372C',
+            fontSize: 20,
+            fontWeight: 'bold',
+            fontFamily: 'Pixel',
           }}>
-               {/* column 1 */}
-                  <View style={{ 
-                          flex: 1.8, 
-                          backgroundColor: '#F2E5D7',
-                          marginVertical:20,
-                          marginLeft:10,
-                          marginRight:15,
-                          
-                          
-                        }}>
-                          {/* row 1 */}
-                          {/* Login Title */}
-                          <View style={{
-                            backgroundColor:'#63372C',
-                            borderRadius:25,
-                            
-                            height: 150,
-                            
-                            
-                            
-                            }}>
-                            <Text style={{
-                            fontSize: 15,
-                            color: '#C97D60',
-                            fontFamily: 'Pixel',
-                            fontWeight:"bold" ,
-                            margin:5,
-                            marginLeft:17,
-
-                            }}>
-                              login info:
-                              </Text>
-                              <Text style={styles.text}>Name:  
-                                  <TextInput
-                                      placeholder="name?"
-                                      onChangeText={(t) => handleChange('displayName', t)}
-                                      value={userData.displayName}
-                                      style={styles.input}
-                              /></Text>
-
-                               <Text style={styles.text}>username: 
-                                
-                                  <Text style={styles.value}>
-                                  {userData.username}</Text>
-                                  
-                              </Text>
-
-                               <Text style={styles.text}>password: 
-                                <TextInput
-                                      placeholder="password?"
-                                      onChangeText={(t) => handleChange('password', t)}
-                                      value={userData.password}
-                                      style={styles.input}
-                              />
-                                
-
-                                  </Text>
-                             
-                          </View>
-
-                          {/* row 2 */}
-                          <View style={{
-                            backgroundColor:'#63372C',
-                            borderRadius:25,
-                            
-                            height: 300,
-                            marginTop:10,
-                            
-                            
-                            }}>
-                            <Text style={{
-                            fontSize: 15,
-                            color: '#C97D60',
-                            fontFamily: 'Pixel',
-                            fontWeight:"bold" ,
-                            margin:5,
-                            marginLeft:17,
-                            
-
-                            }}>
-                              status:
-                              </Text>
-
-                              <Text style={styles.text}>job: 
-                                
-                                <Text style={styles.value}>
-                                {userData.job}</Text>
-                                  
-                              </Text>
-                              <Text style={styles.text}>housing: 
-                                
-                                <Text style={styles.value}>
-                                {userData.housing}</Text>
-                                  
-                              </Text>
-                              
-
-                          </View>
-                          
-                          
-                
-                </View>
-                
-                {/* column 2 */}
-                <View style={{ 
-                      flex: 0.9, 
-                      backgroundColor: '#F2E5D7',
-                      marginVertical:20, 
-                      marginRight:10, 
-                         
-                      }}>
-
-                      {/* row 1 */}
-                      {/* Home Screen Title */}
-                      <View style={{
-                            backgroundColor:'#63372C',
-                            borderRadius:15,
-                            
-                            height: 300,
-                            
-                            
-                            
-                            }}>
-                            <Text style={{
-                            fontSize: 15,
-                            color: '#C97D60',
-                            fontFamily: 'Pixel',
-                            fontWeight:"bold" ,
-                            margin:5,
-                            marginLeft:17,
-                            
-
-                            }}>
-                              Financial Info:
-                              </Text>
-                              <Text style={styles.text}>food: 
-                                
-                                <Text style={styles.value}>
-                                {userData.food}</Text>
-                                  
-                              </Text>
-                              <Text style={styles.text}>utilities: 
-                                
-                                <Text style={styles.value}>
-                                {userData.utilities}</Text>
-                                  
-                              </Text>
-                              <Text style={styles.text}>credit score: 
-                                
-                                <Text style={styles.value}>
-                                {userData?.credit?.creditScore ?? userData?.creditScore ?? '—'}</Text>
-                                  
-                              </Text>
-                              <Text style={styles.text}>credit bill: 
-                                
-                                <Text style={styles.value}>
-                                {userData?.credit?.creditCardbill ?? userData?.credit?.creditCardBill ?? userData?.creditCardBill ?? '—'}</Text>
-                                  
-                              </Text>
-
-                              <Text style={styles.text}>credit limit: 
-                                
-                                <Text style={styles.value}>
-                                {userData?.credit?.creditLimit ?? userData?.creditCardLimit ?? '—'}</Text>
-                                  
-                              </Text>
-                          </View>
-                          
-                
-                </View>
-            
-                </View>
-
-                {/* row 2 */}
-    
-                {/* column 2 */}
-                {/* Logout Button */}
-                        <TouchableOpacity
-                          onPress={async () => {
-                            try {
-                              await signOut(auth);
-                              // Reset stack to Login
-                              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-                            } catch (err) {
-                              console.error('Sign-out error', err);
-                            }
-                          }}
-                          activeOpacity={0.7}  
-                        >
-                         <ImageBackground
-                            source={require('../assets/button.png')}
-                            style={{ width: 200, height: 100, justifyContent: 'center', alignItems: 'center' }}
-                          >
-                            <Text style={{
-                              color: '#63372C',
-                              fontSize: 20,
-                              fontWeight: "bold",
-                              fontFamily: "Pixel",
-                            }}>
-                              Logout
-                            </Text>
-                          </ImageBackground>
-                        </TouchableOpacity>
-                
-        </ScrollView>
+            Logout
+          </Text>
+        </ImageBackground>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }

@@ -6,6 +6,7 @@ import { doc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { useFonts } from 'expo-font';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FinanceHelpLink from '../components/FinanceHelpLink';
+import { formatLoanRejectionMessage, getRandomLoanRejectionExcuse } from '../lib/loanRejectionExcuses';
 
 export default function LoanScreen() {
   const [fontsLoaded] = useFonts({
@@ -120,7 +121,7 @@ export default function LoanScreen() {
       if (result.approved) {
         setStatus(`Approved — loan id ${result.loanId}, rate ${result.interestRate}% APR, monthly $${result.monthlyPayment}`);
       } else {
-        setStatus('Application denied. Try a smaller amount or improve your credit score.');
+        setStatus(formatLoanRejectionMessage(getRandomLoanRejectionExcuse()));
       }
     } catch (e: any) {
       console.error('applyForLoan', e);

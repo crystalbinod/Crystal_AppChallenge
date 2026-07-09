@@ -22,6 +22,10 @@ export function getWelcomeMessage(userData?: UserContext): string {
   return `${greeting} I'm Piggy, your pocketpiggy guide. Ask me anything about jobs, bills, credit, food, or how to play!`;
 }
 
+export function getNextDayNudgeMessage(): string {
+  return 'Worked or played a job game? Head to Home and press Next Day to get paid and move forward!';
+}
+
 export function buildSystemPrompt(userData?: UserContext): string {
   const context = userData
     ? `

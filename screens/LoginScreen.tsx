@@ -228,20 +228,28 @@ export default function LoginScreen() {
           LOGIN
         </Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
-        
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.7} style={{ marginTop: 20 }}>
+        <Image
+          source={require('../assets/button.png')}
+          style={{
+            width: 200,
+            height: 100,
+            position: 'absolute',
+            alignSelf: 'center',
+          }}
+        />
         <Text style={{
-          
+          paddingTop: 30,
+          marginBottom: 30,
           alignItems: 'center',
           justifyContent: 'center',
           color: '#63372C',
-          fontSize: 10,
+          fontSize: 20,
           fontWeight: 'bold',
           fontFamily: 'Pixel',
-          marginTop:20,
           textAlign: 'center',
         }}>
-          signup
+          SIGNUP
         </Text>
       </TouchableOpacity>
 

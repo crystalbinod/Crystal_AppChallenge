@@ -3,6 +3,7 @@ import * as React from 'react';
 import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { auth, db } from '../lib/firebase';
 import { doc, onSnapshot, runTransaction } from 'firebase/firestore';
+import { formatLoanRejectionMessage, getRandomLoanRejectionExcuse } from '../lib/loanRejectionExcuses';
 import { useFonts } from 'expo-font';
 
 export default function LoanScreen() {
@@ -113,7 +114,7 @@ export default function LoanScreen() {
       if (result.approved) {
         setStatus(`Approved — loan id ${result.loanId}, rate ${result.interestRate}% APR, monthly $${result.monthlyPayment}`);
       } else {
-        setStatus('Application denied. Try a smaller amount or improve your credit score.');
+        setStatus(formatLoanRejectionMessage(getRandomLoanRejectionExcuse()));
       }
     } catch (e: any) {
       console.error('applyForLoan', e);
