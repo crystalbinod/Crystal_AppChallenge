@@ -779,8 +779,8 @@ export default function HomeScreen() {
                   const jobStr = (userData && userData.job) ? String(userData.job).toLowerCase() : '';
                   // thresholds in minutes (totalMinutes)
                   const minuteThresholds: { [k: string]: number } = {
-                    parttime: 3,
-                    company: 4,
+                    parttime: 1,
+                    company: 1,
                     freelance: 1,
                   };
 
@@ -888,9 +888,9 @@ export default function HomeScreen() {
                     let rate = 0;
                     let period = 1; // default: every day
                     if (jobStrFresh.includes('part')) {
-                      rate = 100; period = 10; // every 10 days
+                      rate = 100; period = 1; // every day
                     } else if (jobStrFresh.includes('company')) {
-                      rate = 200; period = 1; // every day
+                      rate = 200; period = 10; // every 10 day
                     } else if (jobStrFresh.includes('free') || jobStrFresh.includes('freelance')) {
                       rate = 150; period = 1; // every day
                     }
@@ -903,7 +903,7 @@ export default function HomeScreen() {
                         // atomically add pay to liquidMoney.total
                         await runTransaction(db, async (tx) => {
                           const s = await tx.get(userRef);
-                          if (!s.exists()) return;
+                          //if (!s.exists()) return;
                           const d = s.data() as any;
                           const liquid = d?.liquidMoney ?? {};
                           const prev = Number(liquid.total) || 0;

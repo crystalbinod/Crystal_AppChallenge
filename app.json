@@ -4,6 +4,7 @@
     "slug": "Crystal_AppChallenge",
     "scheme":"Crystal-AppChallenge-CB",
     "extra": {
+      // Add your Google OAuth client ID here
       "googleAuth":{
         "expoClientId":"492242577167-pn3qfkus1tpqgo90tilrhal45bamdchd.apps.googleusercontent.com"
       }
