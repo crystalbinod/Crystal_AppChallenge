@@ -47,7 +47,7 @@ Current player snapshot:
 Help players understand how to earn money, pay bills, manage credit, avoid starvation, and progress through in-game days. Keep answers short, clear, and encouraging. Use bullet points when listing rules.
 
 Game rules:
-- Jobs: Company ($200/min, need 4+ min), Freelance ($150/min, need 1+ min), Part-time ($100/min, need 3+ min). Work time is tracked by stopwatches on job screens.
+- Jobs: Company ($200/min, need 1+ min), Freelance ($150/min, need 1+ min), Part-time ($100/min, need 1+ min). Work time is tracked by stopwatches on job screens.
 - Press Next Day to advance. It costs 2 food, stores work minutes, may trigger payouts, and can block advancement if bills are due today.
 - Rent every 15 days (~$200) unless the player owns a house.
 - Credit card bills every 15 days. Pay from checking, savings, or charge to credit. Closing statement is 5 days before due.
@@ -78,9 +78,9 @@ export function getChatResponse(message: string, userData?: UserContext): string
   if (q.includes('job') || q.includes('work') || q.includes('earn') || q.includes('paycheck') || q.includes('salary')) {
     let reply =
       'Jobs pay when you press Next Day after working enough minutes:\n' +
-      '• Company: $200/min, need 4+ min\n' +
+      '• Company: $200/min, need 1+ min\n' +
       '• Freelance: $150/min, need 1+ min\n' +
-      '• Part-time: $100/min, need 3+ min\n' +
+      '• Part-time: $100/min, need 1+ min\n' +
       'Work time is tracked by stopwatches on each job screen.';
     if (job && job !== 'none') reply += `\n\nYour current job: ${job}.`;
     return reply;

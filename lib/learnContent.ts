@@ -1,6 +1,6 @@
 export const LEARN_SCREEN_SPEECH = `Welcome to PocketPiggy. Your goal: own a house and reach a seven hundred credit score by day sixty.
 
-How you earn money: Company jobs pay two hundred dollars per minute. Work at least four minutes. Freelance jobs pay one hundred fifty per minute. Work at least one minute. Part-time jobs pay one hundred per minute. Work at least three minutes. Press Next Day to get paid after you work enough time.
+How you earn money: Company jobs pay two hundred dollars per minute. Work at least one minute. Freelance jobs pay one hundred fifty per minute. Work at least one minute. Part-time jobs pay one hundred per minute. Work at least one minute. Press Next Day to get paid after you work enough time.
 
 Housing and bills: Rent is due every fifteen days, about two hundred dollars, unless you own a house. Buy a house in the Shop to stop paying rent. A lease is a contract to rent for a set time in real life.
 

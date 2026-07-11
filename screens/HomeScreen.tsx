@@ -1054,7 +1054,7 @@ export default function HomeScreen() {
                 let jobDoneNow = false;
                 try {
                   const jobStr = (userData && userData.job) ? String(userData.job).toLowerCase() : '';
-                  const minuteThresholds: { [k: string]: number } = { parttime: 3, company: 4, freelance: 1 };
+                  const minuteThresholds: { [k: string]: number } = { parttime: 1, company: 1, freelance: 1 };
                   let requiredMinutes = 0;
                   if (jobStr.includes('part')) requiredMinutes = minuteThresholds.parttime;
                   else if (jobStr.includes('company')) requiredMinutes = minuteThresholds.company;
@@ -1094,8 +1094,8 @@ export default function HomeScreen() {
                   const jobStr = (userData && userData.job) ? String(userData.job).toLowerCase() : '';
                   // thresholds in minutes (totalMinutes)
                   const minuteThresholds: { [k: string]: number } = {
-                    parttime: 3,
-                    company: 4,
+                    parttime: 1,
+                    company: 1,
                     freelance: 1,
                   };
 

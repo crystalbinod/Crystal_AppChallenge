@@ -21,9 +21,9 @@ export default function LearnScreen() {
       <SpeakButton text={LEARN_SCREEN_SPEECH} label="Read all aloud" variant="light" />
 
       <Text style={styles.section}>How you earn money</Text>
-      <Text style={styles.bullet}>• Company job: $200 per minute; work 4+ minutes</Text>
+      <Text style={styles.bullet}>• Company job: $200 per minute; work 1+ minute</Text>
       <Text style={styles.bullet}>• Freelance job: $150 per minute; work 1+ minute</Text>
-      <Text style={styles.bullet}>• Part-time job: $100 per minute; work 3+ minutes</Text>
+      <Text style={styles.bullet}>• Part-time job: $100 per minute; work 1+ minute</Text>
       <Text style={styles.bullet}>• Press Next Day to get paid after you work enough time.</Text>
 
       <Text style={styles.section}>Housing & bills</Text>

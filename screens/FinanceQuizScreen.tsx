@@ -103,7 +103,7 @@ export default function FinanceQuizScreen() {
               {correctCount} / {questions.length} correct
             </Text>
             <Text style={styles.hint}>
-              Pay still comes from work time — start another round or head back when you hit 3+ minutes.
+              Pay still comes from work time — start another round or head back when you hit 1+ minute.
             </Text>
             <TouchableOpacity style={styles.button} onPress={startNewRound}>
               <Text style={styles.buttonText}>New Round</Text>

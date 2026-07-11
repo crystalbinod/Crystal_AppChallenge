@@ -60,10 +60,10 @@ function scenarioQuestions(): FinancialQuizQuestion[] {
     },
     {
       id: `scenario-parttime-${daysLeft}`,
-      prompt: `Part-time work pays $100 per minute and needs at least 3 minutes per shift. How much is one minimum shift worth?`,
-      choices: ['$100', '$200', '$300', '$450'],
-      correctIndex: 2,
-      explanation: '3 minutes × $100/min = $300 before pressing Next Day.',
+      prompt: 'Part-time work pays $100 per minute and needs at least 1 minute per shift. How much is one minimum shift worth?',
+      choices: ['$50', '$100', '$200', '$300'],
+      correctIndex: 1,
+      explanation: '1 minute × $100/min = $100 before pressing Next Day.',
     },
   ];
 }
@@ -126,7 +126,7 @@ const BASE_QUESTIONS: FinancialQuizQuestion[] = [
   },
   {
     id: 'company-pay',
-    prompt: 'Company jobs pay how much per minute (minimum 4 minutes)?',
+    prompt: 'Company jobs pay how much per minute (minimum 1 minute)?',
     choices: ['$100/min', '$150/min', '$200/min', '$300/min'],
     correctIndex: 2,
     explanation: 'Company work pays $200 per minute with a 4-minute minimum.',
@@ -140,10 +140,10 @@ const BASE_QUESTIONS: FinancialQuizQuestion[] = [
   },
   {
     id: 'parttime-pay',
-    prompt: 'Part-time jobs pay how much per minute (minimum 3 minutes)?',
+    prompt: 'Part-time jobs pay how much per minute (minimum 1 minute)?',
     choices: ['$75/min', '$100/min', '$125/min', '$150/min'],
     correctIndex: 1,
-    explanation: 'Part-time pays $100/min and needs at least 3 minutes to count.',
+    explanation: 'Part-time pays $100/min and needs at least 1 minute to count.',
   },
   {
     id: 'next-day',
