@@ -272,7 +272,7 @@ const BASE_QUESTIONS: FinancialQuizQuestion[] = [
       'Extra job offers only',
     ],
     correctIndex: 0,
-    explanation: 'Keep food stocked — running out hurts you when the day advances.',
+    explanation: 'If food stays at 0 for 3 days, pressing Next Day kills your character. Stock up in the Shop.',
   },
   {
     id: 'work-multiple',

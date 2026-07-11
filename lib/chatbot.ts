@@ -1,3 +1,5 @@
+import { GAME_GOAL } from './gameGoals';
+
 export type ChatMessage = {
   id: string;
   role: 'user' | 'assistant';
@@ -19,7 +21,7 @@ const pick = (text: string) => text.toLowerCase();
 export function getWelcomeMessage(userData?: UserContext): string {
   const name = userData?.displayName?.trim();
   const greeting = name ? `Hey ${name}!` : 'Hey there!';
-  return `${greeting} I'm Piggy, your pocketpiggy guide. Ask me anything about jobs, bills, credit, food, or how to play!`;
+  return `${greeting} I'm Piggy, your pocketpiggy guide. Your goal: ${GAME_GOAL.title}. Ask me about jobs, bills, credit, food, or how to play!`;
 }
 
 export function getNextDayNudgeMessage(): string {
@@ -51,9 +53,10 @@ Game rules:
 - Credit card bills every 15 days. Pay from checking, savings, or charge to credit. Closing statement is 5 days before due.
 - Utilities every 30 days (~$40). Taxes every 45 days (~$100).
 - Loans from the Loan screen; installments due every 15 days.
-- Food: if food stays at 0 for more than 5 consecutive days, the player dies and the account is deleted. Buy food from Shop.
+- Food: if food stays at 0 for 3 consecutive in-game days, the player dies and the account is deleted. Buy food from Shop.
 - liquidMoney.total is the main balance; checking and savings are sub-accounts.
 - Reminders on the home screen show upcoming due dates.
+- Win condition: own a house and reach credit score 700 by day 60.
 
 Only answer questions about this game and personal finance within the game. If asked unrelated questions, gently redirect back to the game.
 ${context}`;
@@ -108,7 +111,7 @@ export function getChatResponse(message: string, userData?: UserContext): string
 
   if (q.includes('food') || q.includes('starv') || q.includes('eat') || q.includes('hungry')) {
     let reply =
-      'Each Next Day costs 2 food. If food hits 0 for more than 5 days in a row, your character dies and the account is deleted. Buy food from the Shop screen.';
+      'Each Next Day costs 2 food. If food hits 0 for 3 days in a row, your character dies and the account is deleted. Buy food from the Shop screen.';
     if (!Number.isNaN(food)) reply += `\n\nYour food right now: ${food}.`;
     return reply;
   }
@@ -147,3 +150,5 @@ export function getChatResponse(message: string, userData?: UserContext): string
 
   return "I'm not sure about that one. Try asking about jobs, rent, credit, loans, food, bills, or how Next Day works. You can also tap Learn on the home screen for the full guide.";
 }
+
+export { getSituationalPiggyTip, formatGoalProgress, GAME_GOAL } from './gameGoals';

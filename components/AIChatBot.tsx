@@ -17,6 +17,7 @@ import {
   getChatResponse,
   getWelcomeMessage,
   getNextDayNudgeMessage,
+  getSituationalPiggyTip,
 } from '../lib/chatbot';
 import { askGemini, hasGeminiApiKey } from '../lib/gemini';
 import { hasWorkActivity } from '../lib/workActivity';
@@ -25,11 +26,12 @@ import SpeakButton from './SpeakButton';
 type Props = {
   userData?: { [key: string]: any };
   enableNextDayReminders?: boolean;
+  upcomingDues?: Array<{ label: string; days: number | null }>;
 };
 
 const NEXT_DAY_REMINDER_MS = 2 * 60 * 1000;
 
-export default function AIChatBot({ userData, enableNextDayReminders = true }: Props) {
+export default function AIChatBot({ userData, enableNextDayReminders = true, upcomingDues = [] }: Props) {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
   const panelHeight = isLandscape ? Math.min(220, height - 40) : 380;
@@ -40,6 +42,7 @@ export default function AIChatBot({ userData, enableNextDayReminders = true }: P
   const [typing, setTyping] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [nudgeVisible, setNudgeVisible] = useState(false);
+  const [nudgeText, setNudgeText] = useState('');
   const scrollRef = useRef<ScrollView>(null);
   const nudgeHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -47,8 +50,17 @@ export default function AIChatBot({ userData, enableNextDayReminders = true }: P
     if (!enableNextDayReminders) return undefined;
 
     const showNudge = () => {
-      if (open || !hasWorkActivity()) return;
-      setNudgeVisible(true);
+      if (open) return;
+      const situational = getSituationalPiggyTip(userData, upcomingDues);
+      if (situational) {
+        setNudgeText(situational);
+        setNudgeVisible(true);
+      } else if (hasWorkActivity()) {
+        setNudgeText(getNextDayNudgeMessage());
+        setNudgeVisible(true);
+      } else {
+        return;
+      }
       if (nudgeHideTimer.current) clearTimeout(nudgeHideTimer.current);
       nudgeHideTimer.current = setTimeout(() => setNudgeVisible(false), 12000);
     };
@@ -58,7 +70,7 @@ export default function AIChatBot({ userData, enableNextDayReminders = true }: P
       clearInterval(interval);
       if (nudgeHideTimer.current) clearTimeout(nudgeHideTimer.current);
     };
-  }, [enableNextDayReminders, open]);
+  }, [enableNextDayReminders, open, userData, upcomingDues]);
 
   useEffect(() => {
     if (open) setNudgeVisible(false);
@@ -136,7 +148,7 @@ export default function AIChatBot({ userData, enableNextDayReminders = true }: P
               onPress={() => setNudgeVisible(false)}
               activeOpacity={0.9}
             >
-              <Text style={styles.nudgeText}>{getNextDayNudgeMessage()}</Text>
+              <Text style={styles.nudgeText}>{nudgeText}</Text>
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity

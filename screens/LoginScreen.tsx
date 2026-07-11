@@ -63,12 +63,14 @@ export default function LoginScreen() {
   // Redirects to the 'Main' screen if the user is already logged in
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
-      }
+      if (!user) return;
+      const state = navigation.getState();
+      const currentRoute = state?.routes[state.index ?? 0]?.name;
+      if (currentRoute === 'Main') return;
+      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
     });
-    return unsubscribe; // Cleanup when unmounted
-  }, []);
+    return unsubscribe;
+  }, [navigation]);
 
 
 
@@ -81,13 +83,8 @@ export default function LoginScreen() {
       // Try Firebase email/password login
       await signInWithEmailAndPassword(auth, email.trim(), password);
 
-      // Show pig GIF for feedback
+      // onAuthStateChanged below navigates to Main — avoid a second reset here
       setShowGif(true);
-
-      // Navigate to main screen after short delay
-      setTimeout(() => {
-        navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
-      }, 900);
       
     } catch (e: any) {
       // Handle login errors

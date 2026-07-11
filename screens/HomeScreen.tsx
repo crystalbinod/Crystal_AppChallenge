@@ -1,5 +1,5 @@
 // screens/HomeScreen.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { View, Text, Button,TouchableOpacity, Image, ScrollView, Modal, Pressable, StyleSheet, TextInput, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,6 +16,12 @@ import FreelanceStopwatch from '../lib/stopwatch_freelance';
 import PartTimeStopwatch from '../lib/stopwatch_parttime';
 import { Alert } from 'react-native';
 import AIChatBot from '../components/AIChatBot';
+import {
+  buildPaydaySummary,
+  formatGoalProgress,
+  formatRemindersText,
+  getGoalProgress,
+} from '../lib/gameGoals';
 
 
 export default function HomeScreen() {
@@ -32,12 +38,77 @@ export default function HomeScreen() {
     day: '',
     reminders: '',
     emergencyAlerts: '',
+    emergencyDues: [],
   });
   const [loading, setLoading] = useState(true);
 
   // show a one-time learn hint arrow for new users
   const [showLearnHint, setShowLearnHint] = useState(false);
   const pulse = useRef(new Animated.Value(0)).current;
+
+  const emergencyTemplates = [
+    {
+      label: 'Doctor visit:100',
+      amount: 100,
+      todayText: 'You have a doctor visit today. Pay $100.',
+    },
+    {
+      label: 'Car repair:100',
+      amount: 100,
+      todayText: 'Your car broke down. Pay $100 to fix it today.',
+    },
+    {
+      label: "Friends' birthday gift:50",
+      amount: 100,
+      todayText: "Your parents' birthday is today. Buy them a $100 gift.",
+    },
+  ];
+
+  const buildEmergencyAlertText = (eventsRaw: any, dayRaw: any) => {
+    const currentDay = Number(dayRaw) || 0;
+    const events = Array.isArray(eventsRaw) ? eventsRaw : [];
+    const normalized = events
+      .map((entry: any) => {
+        const dueDay = Number(entry?.dueDay) || 0;
+        const amount = Number(entry?.amount) || 0;
+        return {
+          ...entry,
+          dueDay,
+          amount,
+          daysLeft: dueDay <= currentDay ? 0 : dueDay - currentDay,
+        };
+      })
+      .filter((entry: any) => entry.dueDay > 0)
+      .sort((left: any, right: any) => left.daysLeft - right.daysLeft);
+
+    if (normalized.length === 0) return '';
+    const nextEvent = normalized[0];
+    if (nextEvent.daysLeft <= 0) return nextEvent.todayText || '';
+    if (nextEvent.daysLeft === 1) return `${nextEvent.label} tomorrow. Pay $${nextEvent.amount}.`;
+    return `${nextEvent.label} in ${nextEvent.daysLeft} days. Pay $${nextEvent.amount}.`;
+  };
+
+  const createRandomEmergencyDue = (dueDay: number) => {
+    const template = emergencyTemplates[Math.floor(Math.random() * emergencyTemplates.length)];
+    return {
+      ...template,
+      id: `emergency-${dueDay}-${Date.now()}`,
+      dueDay,
+    };
+  };
+
+  const mergeUserData = (data: { [k: string]: any }) => {
+    setUserData((prev) => ({
+      ...prev,
+      ...data,
+      displayName: data.displayName ?? '',
+      job: data.job ?? '',
+      day: data.day ?? '',
+      reminders: data.reminders ?? '',
+      emergencyAlerts: data.emergencyAlerts ?? '',
+      emergencyDues: Array.isArray(data.emergencyDues) ? data.emergencyDues : [],
+    }));
+  };
 
   // Generic getter for a field (keeps backwards compatibility)
   const getUserFieldValue = async (fieldKey: string): Promise<any | null> => {
@@ -71,14 +142,7 @@ export default function HomeScreen() {
         }
         if (!mounted) return;
         const data = snap.data() || {};
-        setUserData(prev => ({ ...prev,
-          ...data,
-          displayName: data.displayName ?? '',
-          job: data.job ?? '',
-          day: data.day ?? '',
-          reminders: data.reminders ?? '',
-          emergencyAlerts: data.emergencyAlerts ?? '',
-        }));
+        mergeUserData(data);
         try {
           if (!data?.seenLearnHint) setShowLearnHint(true);
         } catch (e) { /* noop */ }
@@ -106,7 +170,6 @@ export default function HomeScreen() {
   const btnLabelMb = isPortrait ? 0 : 30;
   const btnFontSize = isPortrait ? 18 : 20;
   const panelRadius = isPortrait ? 22 : 40;
-  const portraitPanelMaxHeight = Math.floor(height * 0.42);
 
   const profileJobButtons = (
     <>
@@ -210,6 +273,24 @@ export default function HomeScreen() {
       // ignore
     }
 
+    try {
+      const emergencyDues = Array.isArray(uData?.emergencyDues) ? uData.emergencyDues : [];
+      emergencyDues.forEach((entry: any) => {
+        const dueDay = Number(entry?.dueDay) || 0;
+        if (dueDay <= 0) return;
+        dues.push({
+          label: entry?.label || 'Emergency expense',
+          days: dueDay <= day ? 0 : dueDay - day,
+          amount: Number(entry?.amount) || 0,
+          emergencyId: entry?.id,
+          message: entry?.todayText || '',
+          isEmergency: true,
+        } as any);
+      });
+    } catch (e) {
+      // ignore malformed emergency dues
+    }
+
     // Filter out nulls (shouldn't be) and return
     return dues;
   };
@@ -226,6 +307,9 @@ export default function HomeScreen() {
 
   const enrichDueAmounts = (dues: any[], uData: { [k: string]: any }) => {
     return dues.map((d: any) => {
+      if (d?.emergencyId) {
+        return { ...d, amount: Number(d.amount) || 100 };
+      }
       if (d?.loanId) {
         const loanEntry = (uData.loans || {})[d.loanId] || {};
         const amt = Number(loanEntry?.monthlyPayment) || Number(loanEntry?.remaining) || 0;
@@ -252,6 +336,7 @@ export default function HomeScreen() {
     const settled = uData?.paymentsSettled || {};
     const dueToday = (getUpcomingDues(uData) || []).filter((d: any) => Number(d.days) === 0);
     return dueToday.filter((d: any) => {
+      if (d.isEmergency || d.emergencyId) return true;
       const key = dueSettlementKey(d.label, d.loanId);
       return Number(settled[key]) !== day;
     });
@@ -288,6 +373,7 @@ export default function HomeScreen() {
         });
         if (snap.exists()) setUserData((prev) => ({ ...prev, ...(snap.data() as any) }));
         setPaymentsDue((prev) => prev.filter((p) => {
+          if (p.emergencyId && dueItem.emergencyId) return !(p.emergencyId === dueItem.emergencyId);
           if (p.loanId && dueItem.loanId) return !(p.loanId === dueItem.loanId);
           return !(p.label === dueItem.label);
         }));
@@ -303,6 +389,13 @@ export default function HomeScreen() {
         if (!s.exists()) throw new Error('User doc missing');
         const d = s.data() as any;
         const liquid = d?.liquidMoney ?? { total: 0, checkingAccount: {}, savingsAccount: {} };
+        const emergencyDues = Array.isArray(d?.emergencyDues) ? d.emergencyDues : [];
+        const nextEmergencyDues = dueItem?.emergencyId
+          ? emergencyDues.filter((entry: any) => String(entry?.id) !== String(dueItem.emergencyId))
+          : emergencyDues;
+        const nextEmergencyAlert = buildEmergencyAlertText(nextEmergencyDues, d?.day);
+        const isEmergency = !!dueItem?.emergencyId;
+        const dayVal = Number(d?.day) || 0;
 
         if (method === 'debit') {
           if (!accountKey) throw new Error('No checking account selected');
@@ -334,8 +427,12 @@ export default function HomeScreen() {
               updates[`loans.${loanId}.remaining`] = newRem;
             }
           }
-          const dayVal = Number(d?.day) || 0;
-          updates[`paymentsSettled.${dueSettlementKey(dueItem?.label || '', loanId)}`] = dayVal;
+          if (isEmergency) {
+            updates['emergencyDues'] = nextEmergencyDues;
+            updates['emergencyAlerts'] = nextEmergencyAlert;
+          } else {
+            updates[`paymentsSettled.${dueSettlementKey(dueItem?.label || '', loanId)}`] = dayVal;
+          }
           tx.update(userRef, updates);
         } else if (method === 'savings') {
           if (!accountKey) throw new Error('No savings account selected');
@@ -367,8 +464,12 @@ export default function HomeScreen() {
               updates[`loans.${loanId}.remaining`] = newRem;
             }
           }
-          const dayVal = Number(d?.day) || 0;
-          updates[`paymentsSettled.${dueSettlementKey(dueItem?.label || '', loanId)}`] = dayVal;
+          if (isEmergency) {
+            updates['emergencyDues'] = nextEmergencyDues;
+            updates['emergencyAlerts'] = nextEmergencyAlert;
+          } else {
+            updates[`paymentsSettled.${dueSettlementKey(dueItem?.label || '', loanId)}`] = dayVal;
+          }
           tx.update(userRef, updates);
         } else if (method === 'credit') {
           const credit = d?.credit ?? {};
@@ -386,8 +487,12 @@ export default function HomeScreen() {
               updates[`loans.${loanId}.remaining`] = newRem;
             }
           }
-          const dayVal = Number(d?.day) || 0;
-          updates[`paymentsSettled.${dueSettlementKey(dueItem?.label || '', loanId)}`] = dayVal;
+          if (isEmergency) {
+            updates['emergencyDues'] = nextEmergencyDues;
+            updates['emergencyAlerts'] = nextEmergencyAlert;
+          } else {
+            updates[`paymentsSettled.${dueSettlementKey(dueItem?.label || '', loanId)}`] = dayVal;
+          }
           tx.update(userRef, updates);
         } else {
           throw new Error('Unknown payment method');
@@ -396,11 +501,11 @@ export default function HomeScreen() {
 
   // refresh local userData
       const snap = await getDoc(userRef);
-      if (snap.exists()) setUserData(prev => ({ ...prev, ...(snap.data() as any) }));
+      if (snap.exists()) mergeUserData((snap.data() as any) || {});
 
       // remove the paid due from the list
-      // remove the paid due from the list; match by label and loanId if present
       setPaymentsDue(prev => prev.filter(p => {
+        if (p.emergencyId && dueItem.emergencyId) return !(p.emergencyId === dueItem.emergencyId);
         if (p.loanId && dueItem.loanId) return !(p.loanId === dueItem.loanId);
         return !(p.label === dueItem.label);
       }));
@@ -548,7 +653,16 @@ export default function HomeScreen() {
         if (PartTimeStopwatch && typeof PartTimeStopwatch.reset === 'function') PartTimeStopwatch.reset();
       } catch (e) { /* noop */ }
 
-      Alert.alert('Next Day advanced', 'Payments cleared and day advanced.');
+      const freshSnap = await getDoc(userRef);
+      const fresh = freshSnap.exists() ? (freshSnap.data() as any) : {};
+      mergeUserData(fresh);
+      const summary = buildPaydaySummary({
+        fresh,
+        billsClear: getUnpaidDuesToday(fresh).length === 0,
+        afterPaymentFlow: true,
+      });
+      await announceGoalStatus(userRef, fresh);
+      Alert.alert('Next Day', summary);
     } catch (e) {
       console.error('finalizeNextDay error', e);
     } finally {
@@ -577,6 +691,37 @@ export default function HomeScreen() {
     anim.start();
     return () => anim.stop();
   }, [showLearnHint, pulse]);
+
+  const closeDueWallet = () => {
+    if (pendingNextDay && paymentsDue.length > 0) {
+      Alert.alert('Payment required', 'You must pay all dues before moving to the next day.');
+      return;
+    }
+    setShowDueWallet(false);
+    setPaymentsDue([]);
+  };
+
+  const emergencyAlertText = buildEmergencyAlertText(userData?.emergencyDues, userData?.day)
+    || String(userData?.emergencyAlerts ?? '');
+
+  const upcomingDues = useMemo(() => getUpcomingDues(userData || {}), [userData]);
+  const remindersText = useMemo(() => formatRemindersText(upcomingDues), [upcomingDues]);
+  const goalProgressText = useMemo(() => formatGoalProgress(userData), [userData]);
+
+  const announceGoalStatus = async (userRef: any, fresh: { [k: string]: any }) => {
+    const progress = getGoalProgress(fresh);
+    try {
+      if (progress.won && !fresh.gameWon) {
+        await updateDoc(userRef, { gameWon: true });
+        Alert.alert('You did it!', 'House owned and 700+ credit score. You beat PocketPiggy!');
+      } else if (progress.lost && !fresh.gameLost) {
+        await updateDoc(userRef, { gameLost: true });
+        Alert.alert("Time's up", 'Day 60 passed without hitting the goal. Keep playing to practice!');
+      }
+    } catch (e) {
+      console.warn('Goal status update failed', e);
+    }
+  };
 
   // dismiss and persist that the user has seen the learn hint
   const dismissLearnHint = async () => {
@@ -661,12 +806,11 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Main brown panel — capped height in portrait so nav buttons stay prominent */}
+      {/* Main brown panel — fills remaining height in portrait */}
       <ScrollView style={{
-        flex: isPortrait ? 0 : 1,
-        maxHeight: isPortrait ? portraitPanelMaxHeight : undefined,
+        flex: 1,
         backgroundColor: '#c78e71ff',
-        marginVertical: isPortrait ? 4 : 7,
+        marginVertical: isPortrait ? 6 : 7,
         marginHorizontal: isPortrait ? 10 : 0,
         marginRight: isPortrait ? 10 : 10,
         borderRadius: panelRadius,
@@ -716,6 +860,17 @@ export default function HomeScreen() {
             </Text>
           </Text>
         </View>
+
+        <Text style={{
+          marginHorizontal: 7,
+          marginBottom: 8,
+          color: '#63372C',
+          fontFamily: 'LazyDaze',
+          fontSize: 13,
+          lineHeight: 18,
+        }}>
+          {goalProgressText}
+        </Text>
 
         {/* horizontal row Section - with Job label and Next Day button */}
         <View style={{
@@ -787,10 +942,38 @@ export default function HomeScreen() {
                   return;
                 }
 
+                // Random emergency expense (~2/15 chance) scheduled for the upcoming day
+                const currentDayVal = Number(freshUserData.day) || 0;
+                const nextDayVal = currentDayVal + 1;
+                let emergencyDues = Array.isArray(freshUserData?.emergencyDues) ? freshUserData.emergencyDues : [];
+                const hasEmergencyOnOrBeforeNextDay = emergencyDues.some((entry: any) => {
+                  const dueDay = Number(entry?.dueDay) || 0;
+                  return dueDay > 0 && dueDay <= nextDayVal;
+                });
+                if (!hasEmergencyOnOrBeforeNextDay && Math.random() < (2 / 15)) {
+                  const generatedEmergency = createRandomEmergencyDue(nextDayVal);
+                  emergencyDues = [...emergencyDues, generatedEmergency];
+                  const nextEmergencyAlert = buildEmergencyAlertText(emergencyDues, currentDayVal);
+                  try {
+                    await updateDoc(userRef, {
+                      emergencyDues,
+                      emergencyAlerts: nextEmergencyAlert,
+                    });
+                    freshUserData = {
+                      ...freshUserData,
+                      emergencyDues,
+                      emergencyAlerts: nextEmergencyAlert,
+                    };
+                    mergeUserData(freshUserData);
+                  } catch (e) {
+                    console.warn('Failed to save generated emergency due', e);
+                  }
+                }
+
                 // --- FOOD / STARVATION LOGIC ---
                 // Every time Next Day is pressed, subtract 2 from `food`.
                 // Track consecutive days at 0 with `foodZeroDays`. If the user
-                // has been at 0 for more than 5 days before pressing, treat
+                // has been at 0 for 3+ starvation days before pressing, treat
                 // them as dead: show alert and delete the account (best-effort).
                 try {
                   let userDied = false;
@@ -801,8 +984,8 @@ export default function HomeScreen() {
                     const foodNow = Number(d?.food) || 0;
                     const zeroDaysNow = Number(d?.foodZeroDays) || 0;
 
-                    // If food is already zero and has been zero for more than 5 days -> death
-                    if (foodNow === 0 && zeroDaysNow > 5) {
+                    // If food is already zero for 3+ starvation days -> death
+                    if (foodNow === 0 && zeroDaysNow >= 3) {
                       userDied = true;
                       // mark dead flag in doc so server-side inspection can see it
                       tx.update(userRef, { dead: true });
@@ -955,6 +1138,8 @@ export default function HomeScreen() {
                   console.warn('Failed to update local day state', e);
                 }
 
+                let payEarnedThisStep = 0;
+
                 // PAYOUT LOGIC: If the user's job is done ('yes'), pay them according to job and day rules
                 try {
                   const freshSnap = await getDoc(userRef);
@@ -986,6 +1171,7 @@ export default function HomeScreen() {
                       const hoursWorkedVal = Number(fresh.hoursWorked) || 0;
                       const pay = hoursWorkedVal * rate;
                       if (pay > 0) {
+                        payEarnedThisStep = pay;
                         // atomically add pay to liquidMoney.total
                         await runTransaction(db, async (tx) => {
                           const s = await tx.get(userRef);
@@ -1015,7 +1201,17 @@ export default function HomeScreen() {
                   if (PartTimeStopwatch && typeof PartTimeStopwatch.reset === 'function') PartTimeStopwatch.reset();
                 } catch (e) { /* noop */ }
 
-                Alert.alert('Hours stored', `Added ${totalMinutes}m; new total ${newTotal}m`);
+                const endSnap = await getDoc(userRef);
+                const endFresh = endSnap.exists() ? (endSnap.data() as any) : {};
+                mergeUserData(endFresh);
+                const summary = buildPaydaySummary({
+                  fresh: endFresh,
+                  minutesWorked: totalMinutes,
+                  payEarned: payEarnedThisStep,
+                  billsClear: getUnpaidDuesToday(endFresh).length === 0,
+                });
+                await announceGoalStatus(userRef, endFresh);
+                Alert.alert('Next Day', summary);
               } catch (e) {
                 console.error('Next Day store error', e);
                 Alert.alert('Error', 'Failed to store hours. See console for details.');
@@ -1062,26 +1258,8 @@ export default function HomeScreen() {
             fontSize: 15,
             lineHeight: 22,
           }}>
-            {userData.reminders || 'No reminders yet.'}
+            {remindersText}
           </Text>
-          {
-            // compute quick due badge when something is due within 5 days
-            (() => {
-              try {
-                const dues = getUpcomingDues(userData || {});
-                const soon = dues.filter(d => typeof d.days === 'number' && d.days <= 5);
-                if (!soon || soon.length === 0) return null;
-                const parts = soon.map(d => d.days === 0 ? `${d.label} today` : `${d.label} in ${d.days}d`);
-                return (
-                  <Text style={{ color: '#fff8f3', marginTop: 6, fontFamily: 'LazyDaze', fontSize: 15, lineHeight: 22 }}>
-                    Due: {parts.join(', ')}
-                  </Text>
-                );
-              } catch (e) {
-                return null;
-              }
-            })()
-          }
         </TouchableOpacity>
 
   {/* Emergency Alerts Section */}
@@ -1126,7 +1304,7 @@ export default function HomeScreen() {
           fontFamily: 'Pixel',
           borderColor: '#63372C'
         }}>
-          Emergency Alerts: {userData.emergencyAlerts}
+          Emergency Alerts: {emergencyAlertText || 'None'}
         </Text>
         
         {/* Payments-due wallet modal */}
@@ -1134,9 +1312,7 @@ export default function HomeScreen() {
           visible={showDueWallet}
           transparent={true}
           animationType="slide"
-          onRequestClose={() => {
-            if (!pendingNextDay) setShowDueWallet(false);
-          }}
+          onRequestClose={closeDueWallet}
         >
           <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
             <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 16 }}>
@@ -1147,6 +1323,9 @@ export default function HomeScreen() {
                 paymentsDue.map((p, idx) => (
                   <View key={`${p.label}-${idx}`} style={{ marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 8 }}>
                     <Text style={{ fontFamily: 'Pixel', fontSize: 16 }}>{p.label} — ${p.amount}</Text>
+                    {p?.isEmergency && !!p?.message && (
+                      <Text style={{ fontFamily: 'Pixel', fontSize: 12, marginTop: 4 }}>{p.message}</Text>
+                    )}
                     <View style={{ flexDirection: 'row', marginTop: 8 }}>
                       <Pressable onPress={() => setSelectedMethodFor(prev => ({ ...prev, [p.label]: 'debit' }))} style={{ marginRight: 8, padding: 8, backgroundColor: selectedMethodFor[p.label] === 'debit' ? '#c78e71' : '#eee', borderRadius: 6 }}>
                         <Text style={{ fontFamily: 'Pixel' }}>Debit</Text>
@@ -1213,17 +1392,9 @@ export default function HomeScreen() {
               )}
 
               <View style={{ marginTop: 8, flexDirection: 'row', justifyContent: 'flex-end' }}>
-                {!pendingNextDay && (
-                  <Pressable
-                    onPress={() => {
-                      setShowDueWallet(false);
-                      setPaymentsDue([]);
-                    }}
-                    style={{ marginLeft: 8, padding: 8 }}
-                  >
-                    <Text style={{ fontFamily: 'Pixel' }}>Close</Text>
-                  </Pressable>
-                )}
+                <Pressable onPress={closeDueWallet} style={{ marginLeft: 8, padding: 8 }}>
+                  <Text style={{ fontFamily: 'Pixel' }}>Close</Text>
+                </Pressable>
               </View>
             </View>
           </View>
@@ -1251,7 +1422,7 @@ export default function HomeScreen() {
         </Animated.View>
       )}
 
-      <AIChatBot userData={userData} />
+      <AIChatBot userData={userData} upcomingDues={upcomingDues} />
       
     </View>
   );
